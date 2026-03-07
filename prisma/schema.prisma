@@ -1,0 +1,37 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  username     String         @unique
+  passwordHash String
+  role         String         @default("STUDENT")
+  targetAmount Int            @default(1050)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  contributions Contribution[]
+}
+
+model Contribution {
+  id          String           @id @default(cuid())
+  title       String
+  note        String?
+  kind        String           @default("MANUAL")
+  amount      Int
+  periodLabel String?
+  occurredAt  DateTime?
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt, sortOrder])
+}
