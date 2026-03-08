@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { submitOptionVoteAction, submitSuggestionVoteAction } from "@/app/actions";
@@ -141,24 +142,27 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                 </div>
               </div>
               <div className="stack">
-                <div className="info-callout">
+                <Link className="info-callout quick-link-card" href="/student?tab=polls">
                   <strong>{openPollCount} öppna omröstningar</strong>
                   <p>Gå till fliken Röstningar för att svara utan att scrolla genom resten av sidan.</p>
-                </div>
+                </Link>
                 {latestAnnouncement ? (
-                  <article className="announcement-card">
+                  <Link
+                    className="announcement-card quick-link-card"
+                    href={`/student?tab=announcements#announcement-${latestAnnouncement.id}`}
+                  >
                     <div className="announcement-meta">
                       <span>{latestAnnouncement.authorName}</span>
                       <span>{formatDateLabel(latestAnnouncement.publishedAt)}</span>
                     </div>
                     <h3>{latestAnnouncement.title}</h3>
                     <p>{latestAnnouncement.body}</p>
-                  </article>
+                  </Link>
                 ) : (
                   <div className="feed-empty">Inga meddelanden just nu.</div>
                 )}
                 {latestHistoryEntry ? (
-                  <div className="history-item">
+                  <Link className="history-item quick-link-card" href="/student?tab=history">
                     <div>
                       <strong>Senast registrerat</strong>
                       <p>
@@ -167,7 +171,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                       </p>
                     </div>
                     <span>{formatCurrency(latestHistoryEntry.amount)}</span>
-                  </div>
+                  </Link>
                 ) : (
                   <div className="feed-empty">Inga poster registrerade ännu.</div>
                 )}
@@ -190,7 +194,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
               <div className="feed-empty">Inga meddelanden just nu.</div>
             ) : (
               data.announcements.map((announcement) => (
-                <article className="announcement-card" key={announcement.id}>
+                <article className="announcement-card jump-target" id={`announcement-${announcement.id}`} key={announcement.id}>
                   <div className="announcement-meta">
                     <span>{announcement.authorName}</span>
                     <span>{formatDateLabel(announcement.publishedAt)}</span>

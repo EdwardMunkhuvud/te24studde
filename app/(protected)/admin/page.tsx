@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   createAnnouncementAction,
   createContributionAction,
@@ -172,19 +173,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
               </div>
               <div className="stack">
-                <div className="info-callout">
+                <Link className="info-callout quick-link-card" href="/admin?tab=money">
                   <strong>{data.recentContributions.length} nya poster i översikten</strong>
                   <p>Gå till Pengar om du vill registrera fler utan att scrolla genom allt annat.</p>
-                </div>
+                </Link>
                 {latestAnnouncement ? (
-                  <article className="announcement-card">
+                  <Link
+                    className="announcement-card quick-link-card"
+                    href={`/admin?tab=announcements#announcement-${latestAnnouncement.id}`}
+                  >
                     <div className="announcement-meta">
                       <span>{latestAnnouncement.authorName}</span>
                       <span>{formatDateLabel(latestAnnouncement.publishedAt)}</span>
                     </div>
                     <h3>{latestAnnouncement.title}</h3>
                     <p>{latestAnnouncement.body}</p>
-                  </article>
+                  </Link>
                 ) : (
                   <div className="feed-empty">Inga meddelanden publicerade ännu.</div>
                 )}
@@ -317,7 +321,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <div className="feed-empty">Inga meddelanden ännu.</div>
               ) : (
                 data.announcements.map((announcement) => (
-                  <article className="announcement-card admin-card" key={announcement.id}>
+                  <article
+                    className="announcement-card admin-card jump-target"
+                    id={`announcement-${announcement.id}`}
+                    key={announcement.id}
+                  >
                     <div className="announcement-meta">
                       <span>{announcement.authorName}</span>
                       <span>{formatDateLabel(announcement.publishedAt)}</span>
