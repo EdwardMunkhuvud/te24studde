@@ -86,7 +86,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div className="login-header">
               <p className="eyebrow">Inloggning</p>
               <h2>Logga in på klassen</h2>
-              <p>Använd ditt användarnamn och ditt enkla lösenord för att komma in. Användarnamnet är förnamn och efternamn i små bokstäver med punkt emellan, ex "karl.andersson" och lösenord endast namn i små bokstäver, ex "karl"</p>
+              <p>Använd ditt användarnamn och ditt enkla lösenord för att komma in. Användarnamnet är förnamn och efternamn i små bokstäver med punkt emellan, ex &quot;karl.andersson&quot; och lösenord endast namn i små bokstäver, ex &quot;karl&quot;</p>
             </div>
             {banner ? (
               <div className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div>
