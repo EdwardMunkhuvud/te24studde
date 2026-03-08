@@ -2,10 +2,53 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { writeFile } from "node:fs/promises";
 
-import { INITIAL_DATA } from "../data/initial-data";
-import { ROLES, Role } from "../lib/constants";
-
 const prisma = new PrismaClient();
+const ROLES = {
+  ADMIN: "ADMIN",
+  STUDENT: "STUDENT",
+} as const;
+
+const CONTRIBUTION_TYPES = {
+  SALE: "SALE",
+  SWISH: "SWISH",
+  MANUAL: "MANUAL",
+} as const;
+
+type Role = (typeof ROLES)[keyof typeof ROLES];
+
+const INITIAL_DATA = [
+  { name: "Adan Lindell Akesson", username: "adan.lindell.akesson", password: "std-49eb0a", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Armin Colic", username: "armin.colic", password: "std-02036c", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Benjamin Brkic", username: "benjamin.brkic", password: "std-25f850", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 350, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Edvin Moberg", username: "edvin.moberg", password: "Edvin2026!", role: ROLES.ADMIN, targetAmount: 1050, contributions: [] },
+  { name: "Elis Bluml Karadza", username: "elis.bluml.karadza", password: "std-b6c37e", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Erik Hellstrom", username: "erik.hellstrom", password: "std-542ce4", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Folke Farebo", username: "folke.farebo", password: "std-93cadd", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 210, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Frankie Dang", username: "frankie.dang", password: "std-d70b72", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 350, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Ghazal Abo Nabout", username: "ghazal.abo.nabout", password: "std-f38d52", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 280, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Harry Almert", username: "harry.almert", password: "std-ea3664", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Helle van Asseldonk", username: "helle.van.asseldonk", password: "std-f2499a", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 420, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Hugo Lindberg", username: "hugo.lindberg", password: "std-9e62e8", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Isabella Dinh", username: "isabella.dinh", password: "std-1700b9", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 770, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Jennifer Tran", username: "jennifer.tran", password: "std-c2e4a9", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 1120, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Justina Jonasson", username: "justina.jonasson", password: "std-8c34b1", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 630, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Karim Almasri", username: "karim.almasri", password: "std-944691", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 70, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Keon Gashi", username: "keon.gashi", password: "std-af13c7", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Lucas Ericsson", username: "lucas.ericsson", password: "std-385ef8", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 350, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Lucas Jonsson", username: "lucas.jonsson", password: "std-76be99", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 630, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Maja Granlund", username: "maja.granlund", password: "std-460843", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 560, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Majd Arab", username: "majd.arab", password: "std-d5c7bf", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 350, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Melwin Dahlberg", username: "melwin.dahlberg", password: "std-b9ecbe", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Nikolaj Andersen", username: "nikolaj.andersen", password: "std-72c0af", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 420, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Oliver Krantz", username: "oliver.krantz", password: "std-f5233c", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Simon Elgemar Jonsson", username: "simon.elgemar.jonsson", password: "std-fab091", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 490, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Stefan Noel", username: "stefan.noel", password: "std-b160fe", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Svante Brodin", username: "svante.brodin", password: "std-62aee3", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 210, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Vendela Lindh", username: "vendela.lindh", password: "std-61b9ee", role: ROLES.STUDENT, targetAmount: 1050, contributions: [] },
+  { name: "Viggo Haglind", username: "viggo.haglind", password: "std-d5a4ec", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 350, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Vilgot Tyrberg", username: "vilgot.tyrberg", password: "std-6ae0a1", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 1680, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+  { name: "Vilma Hagman Dalfjard", username: "vilma.hagman.dalfjard", password: "std-1f9be7", role: ROLES.STUDENT, targetAmount: 1050, contributions: [{ title: "Runda 1", amount: 840, kind: CONTRIBUTION_TYPES.SALE, periodLabel: "Runda 1", note: null, sortOrder: 0 }] },
+] as const;
 
 async function main() {
   const existingUserCount = await prisma.user.count();
