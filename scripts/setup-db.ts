@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 
 const command = process.platform === "win32" ? "npx.cmd" : "npx";
+const schemaPath = "prisma/schema.prisma";
 const sql = `
 CREATE TABLE IF NOT EXISTS "User" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -30,7 +32,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS "User_username_key" ON "User"("username");
 CREATE INDEX IF NOT EXISTS "Contribution_userId_occurredAt_sortOrder_idx" ON "Contribution"("userId", "occurredAt", "sortOrder");
 `;
 
-const result = spawnSync(command, ["prisma", "db", "execute", "--stdin", "--schema", "prisma/schema.prisma"], {
+if (!existsSync(schemaPath)) {
+  console.error(
+    [
+      `Hittade inte ${schemaPath}.`,
+      "Om du deployar till Railway: montera inte volume ovanpa /app/prisma eftersom det doljer schema.prisma.",
+      "Anvand i stallet en annan mount path, till exempel /app/data, och satt DATABASE_URL=file:../data/dev.db.",
+    ].join("\n"),
+  );
+  process.exit(1);
+}
+
+const result = spawnSync(command, ["prisma", "db", "execute", "--stdin", "--schema", schemaPath], {
   encoding: "utf8",
   input: sql,
 });

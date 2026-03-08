@@ -68,8 +68,8 @@ git commit -m "Initial deploy"
 
 1. Skapa ett GitHub-repo och pusha projektet.
 2. Skapa en ny Railway-tjanst fran GitHub-repot.
-3. Lagg till en Volume och montera den pa `/app/prisma`.
-4. Satt `DATABASE_URL=file:./dev.db`.
+3. Lagg till en Volume och montera den pa `/app/data`.
+4. Satt `DATABASE_URL=file:../data/dev.db`.
 5. Satt en egen `SESSION_SECRET`.
 6. Railway kan sedan starta med `npm start`, vilket nu skapar tabeller och seedar databasen automatiskt forsta gangen.
 
