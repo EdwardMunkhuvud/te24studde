@@ -14,28 +14,30 @@ export default async function ProtectedLayout({
   return (
     <div className="dashboard-page">
       <div className="dashboard-background" />
-      <header className="topbar">
-        <Link className="brand-mark" href={session.role === "ADMIN" ? "/admin" : "/student"}>
-          Studde
-        </Link>
-        <nav className="topbar-nav">
-          <Link href="/">Startsida</Link>
-          <Link href={session.role === "ADMIN" ? "/admin" : "/student"}>
-            {session.role === "ADMIN" ? "Adminpanel" : "Min översikt"}
+      <div className="topbar-shell">
+        <header className="topbar">
+          <Link className="brand-mark" href={session.role === "ADMIN" ? "/admin" : "/student"}>
+            Studde
           </Link>
-        </nav>
-        <div className="topbar-actions">
-          <div className="user-chip">
-            <span>{session.name}</span>
-            <strong>{session.role === "ADMIN" ? "Admin" : "Elev"}</strong>
+          <nav className="topbar-nav">
+            <Link href="/">Start</Link>
+            <Link href={session.role === "ADMIN" ? "/admin" : "/student"}>
+              {session.role === "ADMIN" ? "Admin" : "Översikt"}
+            </Link>
+          </nav>
+          <div className="topbar-actions">
+            <div className="user-chip">
+              <span>{session.name}</span>
+              <strong>{session.role === "ADMIN" ? "Admin" : "Elev"}</strong>
+            </div>
+            <form action={logoutAction}>
+              <SubmitButton className="button button-secondary" pendingLabel="Loggar ut...">
+                Logga ut
+              </SubmitButton>
+            </form>
           </div>
-          <form action={logoutAction}>
-            <SubmitButton className="button button-secondary" pendingLabel="Loggar ut...">
-              Logga ut
-            </SubmitButton>
-          </form>
-        </div>
-      </header>
+        </header>
+      </div>
       <main className="dashboard-shell">{children}</main>
     </div>
   );

@@ -12,21 +12,36 @@ import { buildUniqueUsername, slugifyName } from "@/lib/utils";
 
 function buildRedirectUrl(basePath: string, params: Record<string, string>) {
   const searchParams = new URLSearchParams(params);
-  return `${basePath}?${searchParams.toString()}`;
+  const query = searchParams.toString();
+  return query ? `${basePath}?${query}` : basePath;
 }
 
-function redirectByRole(role: Role, status?: string, error?: string): never {
-  const path = role === ROLES.ADMIN ? "/admin" : "/student";
+function getTabValue(formData: FormData) {
+  const tab = formData.get("tab");
+  return typeof tab === "string" && tab.trim().length > 0 ? tab.trim() : undefined;
+}
 
-  if (status) {
-    redirect(buildRedirectUrl(path, { status }));
+function redirectToPath(path: string, status?: string, error?: string, tab?: string): never {
+  const params: Record<string, string> = {};
+
+  if (tab) {
+    params.tab = tab;
   }
 
   if (error) {
-    redirect(buildRedirectUrl(path, { error }));
+    params.error = error;
   }
 
-  redirect(path);
+  if (status) {
+    params.status = status;
+  }
+
+  redirect(buildRedirectUrl(path, params));
+}
+
+function redirectByRole(role: Role, status?: string, error?: string, tab?: string): never {
+  const path = role === ROLES.ADMIN ? "/admin" : "/student";
+  redirectToPath(path, status, error, tab);
 }
 
 function refreshApp() {
@@ -86,6 +101,7 @@ const contributionSchema = z.object({
 
 export async function createContributionAction(formData: FormData) {
   await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
 
   const parsed = contributionSchema.safeParse({
     userId: formData.get("userId"),
@@ -97,7 +113,7 @@ export async function createContributionAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-transaction" }));
+    redirectToPath("/admin", undefined, "invalid-transaction", tab);
   }
 
   const user = await prisma.user.findUnique({
@@ -114,7 +130,7 @@ export async function createContributionAction(formData: FormData) {
   });
 
   if (!user) {
-    redirect(buildRedirectUrl("/admin", { error: "unknown-student" }));
+    redirectToPath("/admin", undefined, "unknown-student", tab);
   }
 
   await prisma.contribution.create({
@@ -131,7 +147,7 @@ export async function createContributionAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "transaction-saved" }));
+  redirectToPath("/admin", "transaction-saved", undefined, tab);
 }
 
 const studentSchema = z.object({
@@ -142,6 +158,7 @@ const studentSchema = z.object({
 
 export async function createStudentAction(formData: FormData) {
   await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
 
   const parsed = studentSchema.safeParse({
     name: formData.get("name"),
@@ -150,7 +167,7 @@ export async function createStudentAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-student" }));
+    redirectToPath("/admin", undefined, "invalid-student", tab);
   }
 
   const existingUsernames = new Set(
@@ -176,7 +193,7 @@ export async function createStudentAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "student-saved" }));
+  redirectToPath("/admin", "student-saved", undefined, tab);
 }
 
 const passwordSchema = z.object({
@@ -186,6 +203,7 @@ const passwordSchema = z.object({
 
 export async function resetPasswordAction(formData: FormData) {
   await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
 
   const parsed = passwordSchema.safeParse({
     userId: formData.get("userId"),
@@ -193,7 +211,7 @@ export async function resetPasswordAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-password" }));
+    redirectToPath("/admin", undefined, "invalid-password", tab);
   }
 
   await prisma.user.update({
@@ -206,7 +224,7 @@ export async function resetPasswordAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "password-reset" }));
+  redirectToPath("/admin", "password-reset", undefined, tab);
 }
 
 const announcementSchema = z.object({
@@ -216,13 +234,14 @@ const announcementSchema = z.object({
 
 export async function createAnnouncementAction(formData: FormData) {
   const session = await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
   const parsed = announcementSchema.safeParse({
     title: formData.get("title"),
     body: formData.get("body"),
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-announcement" }));
+    redirectToPath("/admin", undefined, "invalid-announcement", tab);
   }
 
   await prisma.announcement.create({
@@ -234,7 +253,7 @@ export async function createAnnouncementAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "announcement-saved" }));
+  redirectToPath("/admin", "announcement-saved", undefined, tab);
 }
 
 const updateAnnouncementSchema = announcementSchema.extend({
@@ -243,6 +262,7 @@ const updateAnnouncementSchema = announcementSchema.extend({
 
 export async function updateAnnouncementAction(formData: FormData) {
   await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
   const parsed = updateAnnouncementSchema.safeParse({
     announcementId: formData.get("announcementId"),
     title: formData.get("title"),
@@ -250,7 +270,7 @@ export async function updateAnnouncementAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-announcement" }));
+    redirectToPath("/admin", undefined, "invalid-announcement", tab);
   }
 
   await prisma.announcement.update({
@@ -265,7 +285,7 @@ export async function updateAnnouncementAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "announcement-updated" }));
+  redirectToPath("/admin", "announcement-updated", undefined, tab);
 }
 
 const deleteAnnouncementSchema = z.object({
@@ -274,12 +294,13 @@ const deleteAnnouncementSchema = z.object({
 
 export async function deleteAnnouncementAction(formData: FormData) {
   await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
   const parsed = deleteAnnouncementSchema.safeParse({
     announcementId: formData.get("announcementId"),
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-announcement" }));
+    redirectToPath("/admin", undefined, "invalid-announcement", tab);
   }
 
   await prisma.announcement.delete({
@@ -289,7 +310,7 @@ export async function deleteAnnouncementAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "announcement-deleted" }));
+  redirectToPath("/admin", "announcement-deleted", undefined, tab);
 }
 
 const pollSchema = z.object({
@@ -309,6 +330,7 @@ function parsePollOptions(optionsText: string | undefined) {
 
 export async function createPollAction(formData: FormData) {
   const session = await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
   const parsed = pollSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description"),
@@ -317,13 +339,13 @@ export async function createPollAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-poll" }));
+    redirectToPath("/admin", undefined, "invalid-poll", tab);
   }
 
   const options = parsePollOptions(parsed.data.optionsText);
 
   if (parsed.data.type === POLL_TYPES.OPTION && options.length < 2) {
-    redirect(buildRedirectUrl("/admin", { error: "poll-options-required" }));
+    redirectToPath("/admin", undefined, "poll-options-required", tab);
   }
 
   const poll = await prisma.poll.create({
@@ -346,7 +368,7 @@ export async function createPollAction(formData: FormData) {
   }
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "poll-saved" }));
+  redirectToPath("/admin", "poll-saved", undefined, tab);
 }
 
 const updatePollSchema = z.object({
@@ -358,6 +380,7 @@ const updatePollSchema = z.object({
 
 export async function updatePollAction(formData: FormData) {
   await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
   const parsed = updatePollSchema.safeParse({
     pollId: formData.get("pollId"),
     title: formData.get("title"),
@@ -366,7 +389,7 @@ export async function updatePollAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-poll" }));
+    redirectToPath("/admin", undefined, "invalid-poll", tab);
   }
 
   await prisma.poll.update({
@@ -381,7 +404,7 @@ export async function updatePollAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "poll-updated" }));
+  redirectToPath("/admin", "poll-updated", undefined, tab);
 }
 
 const deletePollSchema = z.object({
@@ -390,12 +413,13 @@ const deletePollSchema = z.object({
 
 export async function deletePollAction(formData: FormData) {
   await requireRole(ROLES.ADMIN);
+  const tab = getTabValue(formData);
   const parsed = deletePollSchema.safeParse({
     pollId: formData.get("pollId"),
   });
 
   if (!parsed.success) {
-    redirect(buildRedirectUrl("/admin", { error: "invalid-poll" }));
+    redirectToPath("/admin", undefined, "invalid-poll", tab);
   }
 
   await prisma.poll.delete({
@@ -405,7 +429,7 @@ export async function deletePollAction(formData: FormData) {
   });
 
   refreshApp();
-  redirect(buildRedirectUrl("/admin", { status: "poll-deleted" }));
+  redirectToPath("/admin", "poll-deleted", undefined, tab);
 }
 
 const optionVoteSchema = z.object({
@@ -415,13 +439,14 @@ const optionVoteSchema = z.object({
 
 export async function submitOptionVoteAction(formData: FormData) {
   const session = await requireSession();
+  const tab = getTabValue(formData) ?? "polls";
   const parsed = optionVoteSchema.safeParse({
     pollId: formData.get("pollId"),
     optionId: formData.get("optionId"),
   });
 
   if (!parsed.success) {
-    redirectByRole(session.role, undefined, "invalid-vote");
+    redirectByRole(session.role, undefined, "invalid-vote", tab);
   }
 
   const option = await prisma.pollOption.findUnique({
@@ -434,7 +459,7 @@ export async function submitOptionVoteAction(formData: FormData) {
   });
 
   if (!option || option.pollId !== parsed.data.pollId || !option.poll.isOpen) {
-    redirectByRole(session.role, undefined, "invalid-vote");
+    redirectByRole(session.role, undefined, "invalid-vote", tab);
   }
 
   await prisma.pollResponse.upsert({
@@ -457,7 +482,7 @@ export async function submitOptionVoteAction(formData: FormData) {
   });
 
   refreshApp();
-  redirectByRole(session.role, "vote-saved");
+  redirectByRole(session.role, "vote-saved", undefined, tab);
 }
 
 const suggestionVoteSchema = z.object({
@@ -467,13 +492,14 @@ const suggestionVoteSchema = z.object({
 
 export async function submitSuggestionVoteAction(formData: FormData) {
   const session = await requireSession();
+  const tab = getTabValue(formData) ?? "polls";
   const parsed = suggestionVoteSchema.safeParse({
     pollId: formData.get("pollId"),
     suggestionText: formData.get("suggestionText"),
   });
 
   if (!parsed.success) {
-    redirectByRole(session.role, undefined, "invalid-vote");
+    redirectByRole(session.role, undefined, "invalid-vote", tab);
   }
 
   const poll = await prisma.poll.findUnique({
@@ -483,7 +509,7 @@ export async function submitSuggestionVoteAction(formData: FormData) {
   });
 
   if (!poll || !poll.isOpen || poll.type !== POLL_TYPES.SUGGESTION) {
-    redirectByRole(session.role, undefined, "invalid-vote");
+    redirectByRole(session.role, undefined, "invalid-vote", tab);
   }
 
   await prisma.pollResponse.upsert({
@@ -506,5 +532,5 @@ export async function submitSuggestionVoteAction(formData: FormData) {
   });
 
   refreshApp();
-  redirectByRole(session.role, "vote-saved");
+  redirectByRole(session.role, "vote-saved", undefined, tab);
 }
