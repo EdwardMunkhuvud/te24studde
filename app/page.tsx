@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { loginAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { getSession } from "@/lib/auth";
-import { ROLES } from "@/lib/constants";
+import { POLL_TYPES, ROLES } from "@/lib/constants";
 import { getPublicStats } from "@/lib/dashboard";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateLabel } from "@/lib/utils";
 
 type HomePageProps = {
   searchParams?: {
@@ -49,6 +49,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const stats = await getPublicStats();
   const banner = getBannerCopy(searchParams);
+  const activePolls = stats.polls.filter((poll) => poll.isOpen);
 
   return (
     <main className="landing-page">
@@ -57,10 +58,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="hero-panel">
           <div className="hero-copy">
             <span className="eyebrow">Studde</span>
-            <h1>Håll klasskassan samlad, tydlig och enkel att följa.</h1>
+            <h1>Studentkassan, omröstningar och besked i samma mobilvy.</h1>
             <p className="hero-text">
-              Varje elev kan logga in och se sin egen utveckling, klassens totalsumma och hur långt det är kvar till
-              målet. Adminläget används för att lägga in försäljning, swish och nya elever.
+              Varje elev ser sin utveckling, klassens total, aktuella announcements och öppna omröstningar. Edvin
+              sköter adminläget och kan lägga in pengar, posta meddelanden och starta nya röstningar.
             </p>
             <div className="stat-grid">
               <article className="stat-card">
@@ -72,8 +73,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <strong>{formatCurrency(stats.classTarget)}</strong>
               </article>
               <article className="stat-card">
-                <span>Registrerade elever</span>
-                <strong>{stats.studentCount}</strong>
+                <span>Aktiva omröstningar</span>
+                <strong>{activePolls.length}</strong>
               </article>
               <article className="stat-card">
                 <span>Leder just nu</span>
@@ -84,8 +85,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <div className="login-card">
             <div className="login-header">
               <p className="eyebrow">Inloggning</p>
-              <h2>Se din egen klasskassa</h2>
-              <p>Använd ditt användarnamn och lösenord för att komma in.</p>
+              <h2>Logga in på klassen</h2>
+              <p>Använd ditt användarnamn och ditt enkla lösenord för att komma in.</p>
             </div>
             {banner ? (
               <div className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div>
@@ -97,19 +98,96 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </label>
               <label className="field">
                 <span>Lösenord</span>
-                <input autoComplete="current-password" name="password" placeholder="Ditt lösenord" type="password" />
+                <input autoComplete="current-password" name="password" placeholder="t.ex. edvin" type="password" />
               </label>
               <SubmitButton className="button button-primary" pendingLabel="Loggar in...">
                 Logga in
               </SubmitButton>
             </form>
-            <p className="small-text">
-              Edvin använder adminkontot. Alla andra elever ser sin egen sida efter inloggning.
-            </p>
+            <div className="info-callout">
+              <strong>Nuvarande admin</strong>
+              <p>Edvin Moberg loggar in med användarnamn `edvin.moberg` och lösenord `edvin`.</p>
+            </div>
             <Link className="text-link" href="https://www.studenten.se/">
               Planera studenten vidare
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="landing-shell landing-feed">
+        <div className="feed-grid">
+          <article className="panel">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">Feed</span>
+                <h2>Announcements</h2>
+              </div>
+            </div>
+            <div className="feed-list">
+              {stats.announcements.length === 0 ? (
+                <div className="feed-empty">Inga announcements än.</div>
+              ) : (
+                stats.announcements.map((announcement) => (
+                  <article className="announcement-card" key={announcement.id}>
+                    <div className="announcement-meta">
+                      <span>{announcement.authorName}</span>
+                      <span>{formatDateLabel(announcement.publishedAt)}</span>
+                    </div>
+                    <h3>{announcement.title}</h3>
+                    <p>{announcement.body}</p>
+                  </article>
+                ))
+              )}
+            </div>
+          </article>
+
+          <article className="panel">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">Omröstningar</span>
+                <h2>Öppet för klassen</h2>
+              </div>
+            </div>
+            <div className="feed-list">
+              {stats.polls.length === 0 ? (
+                <div className="feed-empty">Inga omröstningar än.</div>
+              ) : (
+                stats.polls.map((poll) => (
+                  <article className="poll-card" key={poll.id}>
+                    <div className="poll-topline">
+                      <span className={`status-pill ${poll.isOpen ? "open" : "closed"}`}>
+                        {poll.isOpen ? "Öppen" : "Stängd"}
+                      </span>
+                      <span>{formatDateLabel(poll.createdAt)}</span>
+                    </div>
+                    <h3>{poll.title}</h3>
+                    <p>{poll.description}</p>
+                    {poll.type === POLL_TYPES.OPTION ? (
+                      <div className="poll-options">
+                        {poll.options.map((option) => (
+                          <div className="poll-option-row" key={option.id}>
+                            <div className="poll-option-label">
+                              <span>{option.label}</span>
+                              <strong>{option.voteCount} röster</strong>
+                            </div>
+                            <div className="option-bar">
+                              <div style={{ width: `${option.percentage}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="muted-block">
+                        {poll.totalResponses} anonymiserade förslag inskickade hittills.
+                      </div>
+                    )}
+                    <p className="small-text">Logga in för att rösta eller skicka in ett förslag.</p>
+                  </article>
+                ))
+              )}
+            </div>
+          </article>
         </div>
       </section>
     </main>

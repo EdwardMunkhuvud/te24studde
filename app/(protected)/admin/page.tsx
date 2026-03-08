@@ -1,15 +1,21 @@
 import {
+  createAnnouncementAction,
   createContributionAction,
+  createPollAction,
   createStudentAction,
+  deleteAnnouncementAction,
+  deletePollAction,
   resetPasswordAction,
+  updateAnnouncementAction,
+  updatePollAction,
 } from "@/app/actions";
 import { EarningsChart } from "@/components/earnings-chart";
 import { ProgressBar } from "@/components/progress-bar";
 import { SubmitButton } from "@/components/submit-button";
 import { requireRole } from "@/lib/auth";
-import { CONTRIBUTION_TYPES, ROLES } from "@/lib/constants";
+import { CONTRIBUTION_TYPES, POLL_TYPES, ROLES } from "@/lib/constants";
 import { getAdminDashboard } from "@/lib/dashboard";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateLabel } from "@/lib/utils";
 
 type AdminPageProps = {
   searchParams?: {
@@ -26,10 +32,20 @@ function bannerFromParams(searchParams: AdminPageProps["searchParams"]) {
       return { type: "success", text: "Ny elev skapades." };
     case "password-reset":
       return { type: "success", text: "Lösenordet återställdes." };
-    case undefined:
-      break;
+    case "announcement-saved":
+      return { type: "success", text: "Announcement publicerades." };
+    case "announcement-updated":
+      return { type: "success", text: "Announcement uppdaterades." };
+    case "announcement-deleted":
+      return { type: "success", text: "Announcement togs bort." };
+    case "poll-saved":
+      return { type: "success", text: "Omröstningen skapades." };
+    case "poll-updated":
+      return { type: "success", text: "Omröstningen uppdaterades." };
+    case "poll-deleted":
+      return { type: "success", text: "Omröstningen togs bort." };
     default:
-      return null;
+      break;
   }
 
   switch (searchParams?.error) {
@@ -38,9 +54,15 @@ function bannerFromParams(searchParams: AdminPageProps["searchParams"]) {
     case "invalid-student":
       return { type: "error", text: "Kunde inte skapa eleven. Kontrollera namn, mål och lösenord." };
     case "invalid-password":
-      return { type: "error", text: "Det nya lösenordet måste vara minst 6 tecken." };
+      return { type: "error", text: "Det nya lösenordet måste vara minst 3 tecken." };
     case "unknown-student":
       return { type: "error", text: "Den valda eleven hittades inte." };
+    case "invalid-announcement":
+      return { type: "error", text: "Announcementen behöver rubrik och lite mer text." };
+    case "invalid-poll":
+      return { type: "error", text: "Kunde inte spara omröstningen. Kontrollera rubrik, text och status." };
+    case "poll-options-required":
+      return { type: "error", text: "Alternativ-omröstningar måste ha minst två alternativ." };
     default:
       return null;
   }
@@ -62,13 +84,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <section className="page-hero">
         <div>
           <span className="eyebrow">Adminpanel</span>
-          <h1>Klasskassan för studenten</h1>
-          <p>Här kan du registrera försäljning, swish, nya elever och snabbt se hur hela klassen ligger till.</p>
+          <h1>Mörkblå kontroll över studentkassan</h1>
+          <p>
+            Här lägger du in pengar, postar announcements, skapar omröstningar och ser exakt vem som har röstat eller
+            skickat in ett förslag.
+          </p>
         </div>
         <div className="hero-note">
-          <span>Din roll</span>
-          <strong>Edvin Moberg · Admin</strong>
-          <p>Du kan lägga in och ändra data för hela klassen.</p>
+          <span>Standardlösenord</span>
+          <strong>Förnamn i små bokstäver</strong>
+          <p>Exempel: `edvin`, `lucas`, `vilma`. Du kan fortfarande byta dem manuellt per elev.</p>
         </div>
       </section>
 
@@ -88,8 +113,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <strong className="panel-value">{formatCurrency(data.averageAmount)}</strong>
         </article>
         <article className="panel">
-          <span className="panel-label">Registrerade poster</span>
-          <strong className="panel-value">{data.contributionCount}</strong>
+          <span className="panel-label">Öppna omröstningar</span>
+          <strong className="panel-value">{data.openPollCount}</strong>
         </article>
       </section>
 
@@ -135,7 +160,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </label>
             <label className="field field-wide">
               <span>Anteckning</span>
-              <textarea name="note" placeholder="Valfritt: exempelvis vad eleven sålde eller varför posten lades in." rows={4} />
+              <textarea
+                name="note"
+                placeholder="Valfritt: vad eleven sålde eller varför du justerade något."
+                rows={4}
+              />
             </label>
             <div className="form-footer">
               <p className="small-text">Tips: använd minusbelopp om du behöver korrigera något.</p>
@@ -150,7 +179,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <div className="section-heading">
             <div>
               <span className="eyebrow">Din status</span>
-              <h2>Så ligger ditt konto till</h2>
+              <h2>Adminkontot</h2>
             </div>
           </div>
           {data.adminSummary ? (
@@ -172,6 +201,68 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <article className="panel">
           <div className="section-heading">
             <div>
+              <span className="eyebrow">Announcements</span>
+              <h2>Skapa nytt meddelande</h2>
+            </div>
+          </div>
+          <form action={createAnnouncementAction} className="stack">
+            <label className="field">
+              <span>Rubrik</span>
+              <input name="title" placeholder="t.ex. Ny försäljning på fredag" type="text" />
+            </label>
+            <label className="field">
+              <span>Meddelande</span>
+              <textarea name="body" placeholder="Skriv allt klassen behöver veta." rows={5} />
+            </label>
+            <SubmitButton className="button button-primary" pendingLabel="Publicerar...">
+              Publicera announcement
+            </SubmitButton>
+          </form>
+        </article>
+
+        <article className="panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Omröstningar</span>
+              <h2>Skapa ny röstning</h2>
+            </div>
+          </div>
+          <form action={createPollAction} className="stack">
+            <label className="field">
+              <span>Typ</span>
+              <select name="type">
+                <option value={POLL_TYPES.OPTION}>Alternativ att rösta på</option>
+                <option value={POLL_TYPES.SUGGESTION}>Skicka in förslag</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Rubrik</span>
+              <input name="title" placeholder="t.ex. Vilken färg ska hoodien ha?" type="text" />
+            </label>
+            <label className="field">
+              <span>Beskrivning</span>
+              <textarea name="description" placeholder="Beskriv vad klassen ska ta ställning till." rows={4} />
+            </label>
+            <label className="field">
+              <span>Alternativ (en per rad)</span>
+              <textarea
+                name="optionsText"
+                placeholder={"Flak\nSkiva\nMer merch"}
+                rows={4}
+              />
+            </label>
+            <p className="small-text">Alternativen används bara för omröstningar med fasta val.</p>
+            <SubmitButton className="button button-primary" pendingLabel="Skapar omröstning...">
+              Skapa omröstning
+            </SubmitButton>
+          </form>
+        </article>
+      </section>
+
+      <section className="dashboard-grid">
+        <article className="panel">
+          <div className="section-heading">
+            <div>
               <span className="eyebrow">Nya elever</span>
               <h2>Lägg till elevkonto</h2>
             </div>
@@ -183,7 +274,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </label>
             <label className="field">
               <span>Startlösenord</span>
-              <input name="password" placeholder="Minst 6 tecken" type="text" />
+              <input name="password" placeholder="t.ex. maja" type="text" />
             </label>
             <label className="field">
               <span>Mål i kronor</span>
@@ -215,12 +306,154 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </label>
             <label className="field">
               <span>Nytt lösenord</span>
-              <input name="password" placeholder="Minst 6 tecken" type="text" />
+              <input name="password" placeholder="t.ex. viggo" type="text" />
             </label>
             <SubmitButton className="button button-secondary" pendingLabel="Återställer...">
               Återställ lösenord
             </SubmitButton>
           </form>
+        </article>
+      </section>
+
+      <section className="feed-grid">
+        <article className="panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Feed</span>
+              <h2>Hantera announcements</h2>
+            </div>
+          </div>
+          <div className="feed-list">
+            {data.announcements.length === 0 ? (
+              <div className="feed-empty">Inga announcements ännu.</div>
+            ) : (
+              data.announcements.map((announcement) => (
+                <article className="announcement-card admin-card" key={announcement.id}>
+                  <div className="announcement-meta">
+                    <span>{announcement.authorName}</span>
+                    <span>{formatDateLabel(announcement.publishedAt)}</span>
+                  </div>
+                  <form action={updateAnnouncementAction} className="stack">
+                    <input name="announcementId" type="hidden" value={announcement.id} />
+                    <label className="field">
+                      <span>Rubrik</span>
+                      <input defaultValue={announcement.title} name="title" type="text" />
+                    </label>
+                    <label className="field">
+                      <span>Meddelande</span>
+                      <textarea defaultValue={announcement.body} name="body" rows={4} />
+                    </label>
+                    <div className="inline-actions">
+                      <SubmitButton className="button button-secondary" pendingLabel="Sparar...">
+                        Uppdatera
+                      </SubmitButton>
+                    </div>
+                  </form>
+                  <form action={deleteAnnouncementAction}>
+                    <input name="announcementId" type="hidden" value={announcement.id} />
+                    <SubmitButton className="button button-danger" pendingLabel="Tar bort...">
+                      Ta bort
+                    </SubmitButton>
+                  </form>
+                </article>
+              ))
+            )}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Omröstningar</span>
+              <h2>Hantera omröstningar</h2>
+            </div>
+          </div>
+          <div className="feed-list">
+            {data.polls.length === 0 ? (
+              <div className="feed-empty">Inga omröstningar ännu.</div>
+            ) : (
+              data.polls.map((poll) => (
+                <article className="poll-card admin-card" key={poll.id}>
+                  <div className="poll-topline">
+                    <span className={`status-pill ${poll.isOpen ? "open" : "closed"}`}>
+                      {poll.isOpen ? "Öppen" : "Stängd"}
+                    </span>
+                    <span>{formatDateLabel(poll.createdAt)}</span>
+                  </div>
+                  <form action={updatePollAction} className="stack">
+                    <input name="pollId" type="hidden" value={poll.id} />
+                    <label className="field">
+                      <span>Rubrik</span>
+                      <input defaultValue={poll.title} name="title" type="text" />
+                    </label>
+                    <label className="field">
+                      <span>Beskrivning</span>
+                      <textarea defaultValue={poll.description} name="description" rows={4} />
+                    </label>
+                    <label className="field">
+                      <span>Status</span>
+                      <select defaultValue={String(poll.isOpen)} name="isOpen">
+                        <option value="true">Öppen</option>
+                        <option value="false">Stängd</option>
+                      </select>
+                    </label>
+                    <div className="inline-actions">
+                      <SubmitButton className="button button-secondary" pendingLabel="Sparar...">
+                        Uppdatera
+                      </SubmitButton>
+                    </div>
+                  </form>
+
+                  {poll.type === POLL_TYPES.OPTION ? (
+                    <div className="poll-options admin-results">
+                      {poll.options.map((option) => (
+                        <div className="poll-option-row" key={option.id}>
+                          <div className="poll-option-label">
+                            <span>{option.label}</span>
+                            <strong>{option.voteCount} röster</strong>
+                          </div>
+                          <div className="option-bar">
+                            <div style={{ width: `${option.percentage}%` }} />
+                          </div>
+                          <div className="pill-row">
+                            {option.voterNames.length === 0 ? (
+                              <span className="small-text">Ingen har röstat här ännu.</span>
+                            ) : (
+                              option.voterNames.map((voterName) => (
+                                <span className="pill" key={`${option.id}-${voterName}`}>
+                                  {voterName}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="response-grid">
+                      {poll.suggestions.length === 0 ? (
+                        <div className="feed-empty">Inga förslag inskickade ännu.</div>
+                      ) : (
+                        poll.suggestions.map((suggestion) => (
+                          <div className="response-item" key={suggestion.id}>
+                            <p>{suggestion.text}</p>
+                            <span>{suggestion.authorName}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  <form action={deletePollAction}>
+                    <input name="pollId" type="hidden" value={poll.id} />
+                    <SubmitButton className="button button-danger" pendingLabel="Tar bort...">
+                      Ta bort omröstning
+                    </SubmitButton>
+                  </form>
+                </article>
+              ))
+            )}
+          </div>
         </article>
       </section>
 

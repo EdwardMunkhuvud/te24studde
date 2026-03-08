@@ -1,13 +1,43 @@
 import { redirect } from "next/navigation";
 
+import {
+  submitOptionVoteAction,
+  submitSuggestionVoteAction,
+} from "@/app/actions";
 import { EarningsChart } from "@/components/earnings-chart";
 import { ProgressBar } from "@/components/progress-bar";
+import { SubmitButton } from "@/components/submit-button";
 import { requireSession } from "@/lib/auth";
-import { ROLES } from "@/lib/constants";
+import { POLL_TYPES, ROLES } from "@/lib/constants";
 import { getStudentDashboard } from "@/lib/dashboard";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateLabel } from "@/lib/utils";
 
-export default async function StudentPage() {
+type StudentPageProps = {
+  searchParams?: {
+    error?: string;
+    status?: string;
+  };
+};
+
+function getStudentBanner(searchParams: StudentPageProps["searchParams"]) {
+  if (searchParams?.status === "vote-saved") {
+    return {
+      type: "success",
+      message: "Ditt svar sparades.",
+    };
+  }
+
+  if (searchParams?.error === "invalid-vote") {
+    return {
+      type: "error",
+      message: "Kunde inte spara ditt svar. Testa igen.",
+    };
+  }
+
+  return null;
+}
+
+export default async function StudentPage({ searchParams }: StudentPageProps) {
   const session = await requireSession();
 
   if (session.role !== ROLES.STUDENT) {
@@ -16,6 +46,7 @@ export default async function StudentPage() {
 
   const data = await getStudentDashboard(session.userId);
   const student = data.currentStudent;
+  const banner = getStudentBanner(searchParams);
   const historyData = student.history.map((point) => ({
     label: point.label,
     total: point.total,
@@ -44,6 +75,8 @@ export default async function StudentPage() {
         </div>
       </section>
 
+      {banner ? <div className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div> : null}
+
       <section className="metric-grid">
         <article className="panel">
           <span className="panel-label">Din totalsumma</span>
@@ -61,9 +94,137 @@ export default async function StudentPage() {
           <p className="panel-subtle">Snitt per elev: {formatCurrency(data.averageAmount)}</p>
         </article>
         <article className="panel">
-          <span className="panel-label">Klassens mål</span>
-          <strong className="panel-value">{formatCurrency(data.classTarget)}</strong>
-          <p className="panel-subtle">{data.classRows.length} elever registrerade</p>
+          <span className="panel-label">Öppna omröstningar</span>
+          <strong className="panel-value">{data.polls.filter((poll) => poll.isOpen).length}</strong>
+          <p className="panel-subtle">{data.announcements.length} announcements publicerade</p>
+        </article>
+      </section>
+
+      <section className="feed-grid">
+        <article className="panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Feed</span>
+              <h2>Senaste announcements</h2>
+            </div>
+          </div>
+          <div className="feed-list">
+            {data.announcements.length === 0 ? (
+              <div className="feed-empty">Inga announcements just nu.</div>
+            ) : (
+              data.announcements.map((announcement) => (
+                <article className="announcement-card" key={announcement.id}>
+                  <div className="announcement-meta">
+                    <span>{announcement.authorName}</span>
+                    <span>{formatDateLabel(announcement.publishedAt)}</span>
+                  </div>
+                  <h3>{announcement.title}</h3>
+                  <p>{announcement.body}</p>
+                </article>
+              ))
+            )}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Omröstningar</span>
+              <h2>Rösta eller lämna förslag</h2>
+            </div>
+          </div>
+          <div className="feed-list">
+            {data.polls.length === 0 ? (
+              <div className="feed-empty">Inga omröstningar ännu.</div>
+            ) : (
+              data.polls.map((poll) => (
+                <article className="poll-card" key={poll.id}>
+                  <div className="poll-topline">
+                    <span className={`status-pill ${poll.isOpen ? "open" : "closed"}`}>
+                      {poll.isOpen ? "Öppen" : "Stängd"}
+                    </span>
+                    <span>{formatDateLabel(poll.createdAt)}</span>
+                  </div>
+                  <h3>{poll.title}</h3>
+                  <p>{poll.description}</p>
+
+                  {poll.type === POLL_TYPES.OPTION ? (
+                    <>
+                      <div className="poll-options">
+                        {poll.options.map((option) => (
+                          <div className="poll-option-row" key={option.id}>
+                            <div className="poll-option-label">
+                              <span>
+                                {option.label}
+                                {option.selectedByCurrentUser ? <strong className="inline-tag">Ditt val</strong> : null}
+                              </span>
+                              <strong>{option.voteCount} röster</strong>
+                            </div>
+                            <div className="option-bar">
+                              <div style={{ width: `${option.percentage}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {poll.isOpen ? (
+                        <form action={submitOptionVoteAction} className="poll-submit">
+                          <input name="pollId" type="hidden" value={poll.id} />
+                          <div className="choice-list">
+                            {poll.options.map((option) => (
+                              <label className="choice-card" key={option.id}>
+                                <input
+                                  defaultChecked={poll.currentUserResponse?.optionId === option.id}
+                                  name="optionId"
+                                  type="radio"
+                                  value={option.id}
+                                />
+                                <span>{option.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <SubmitButton className="button button-primary" pendingLabel="Sparar svar...">
+                            Spara röst
+                          </SubmitButton>
+                        </form>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      {poll.suggestions.length > 0 ? (
+                        <div className="response-grid">
+                          {poll.suggestions.map((suggestion) => (
+                            <div className="response-item" key={suggestion.id}>
+                              <p>{suggestion.text}</p>
+                              <span>{suggestion.isOwn ? "Ditt förslag" : "Anonymt förslag"}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="feed-empty">Inga förslag skickade ännu.</div>
+                      )}
+                      {poll.isOpen ? (
+                        <form action={submitSuggestionVoteAction} className="poll-submit">
+                          <input name="pollId" type="hidden" value={poll.id} />
+                          <label className="field">
+                            <span>Ditt förslag</span>
+                            <textarea
+                              defaultValue={poll.currentUserResponse?.suggestionText ?? ""}
+                              name="suggestionText"
+                              placeholder="Skriv ditt förslag här"
+                              rows={4}
+                            />
+                          </label>
+                          <SubmitButton className="button button-primary" pendingLabel="Skickar förslag...">
+                            Skicka förslag
+                          </SubmitButton>
+                        </form>
+                      ) : null}
+                    </>
+                  )}
+                </article>
+              ))
+            )}
+          </div>
         </article>
       </section>
 

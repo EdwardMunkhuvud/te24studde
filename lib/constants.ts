@@ -12,3 +12,12 @@ export const CONTRIBUTION_TYPES = {
 } as const;
 
 export type ContributionType = (typeof CONTRIBUTION_TYPES)[keyof typeof CONTRIBUTION_TYPES];
+
+export const POLL_TYPES = {
+  OPTION: "OPTION",
+  SUGGESTION: "SUGGESTION",
+} as const;
+
+export type PollType = (typeof POLL_TYPES)[keyof typeof POLL_TYPES];
+
+export const SEED_VERSION = "2026-03-08-easy-passwords-polls";

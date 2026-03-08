@@ -19,6 +19,7 @@ export default async function ProtectedLayout({
           Studde
         </Link>
         <nav className="topbar-nav">
+          <Link href="/">Startsida</Link>
           <Link href={session.role === "ADMIN" ? "/admin" : "/student"}>
             {session.role === "ADMIN" ? "Adminpanel" : "Min översikt"}
           </Link>

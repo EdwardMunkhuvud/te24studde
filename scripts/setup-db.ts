@@ -28,8 +28,61 @@ CREATE TABLE IF NOT EXISTS "Contribution" (
   "userId" TEXT NOT NULL,
   CONSTRAINT "Contribution_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "Announcement" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "title" TEXT NOT NULL,
+  "body" TEXT NOT NULL,
+  "publishedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  "authorId" TEXT NOT NULL,
+  CONSTRAINT "Announcement_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Poll" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "title" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
+  "type" TEXT NOT NULL,
+  "isOpen" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  "authorId" TEXT NOT NULL,
+  CONSTRAINT "Poll_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "PollOption" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "label" TEXT NOT NULL,
+  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  "pollId" TEXT NOT NULL,
+  CONSTRAINT "PollOption_pollId_fkey" FOREIGN KEY ("pollId") REFERENCES "Poll" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "PollResponse" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "suggestionText" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  "pollId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "optionId" TEXT,
+  CONSTRAINT "PollResponse_pollId_fkey" FOREIGN KEY ("pollId") REFERENCES "Poll" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "PollResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "PollResponse_optionId_fkey" FOREIGN KEY ("optionId") REFERENCES "PollOption" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Setting" (
+  "key" TEXT NOT NULL PRIMARY KEY,
+  "value" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL
+);
 CREATE UNIQUE INDEX IF NOT EXISTS "User_username_key" ON "User"("username");
 CREATE INDEX IF NOT EXISTS "Contribution_userId_occurredAt_sortOrder_idx" ON "Contribution"("userId", "occurredAt", "sortOrder");
+CREATE INDEX IF NOT EXISTS "Announcement_publishedAt_idx" ON "Announcement"("publishedAt");
+CREATE INDEX IF NOT EXISTS "Poll_createdAt_idx" ON "Poll"("createdAt");
+CREATE INDEX IF NOT EXISTS "PollOption_pollId_sortOrder_idx" ON "PollOption"("pollId", "sortOrder");
+CREATE UNIQUE INDEX IF NOT EXISTS "PollResponse_pollId_userId_key" ON "PollResponse"("pollId", "userId");
+CREATE INDEX IF NOT EXISTS "PollResponse_pollId_optionId_idx" ON "PollResponse"("pollId", "optionId");
 `;
 
 if (!existsSync(schemaPath)) {

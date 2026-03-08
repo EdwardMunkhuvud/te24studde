@@ -69,6 +69,10 @@ export function formatTimelineLabel(input: { periodLabel: string | null; occurre
   return input.title;
 }
 
+export function formatDateLabel(date: Date) {
+  return format(date, "d MMM yyyy", { locale: sv });
+}
+
 export function clampPercent(value: number) {
   if (Number.isNaN(value) || !Number.isFinite(value)) {
     return 0;
