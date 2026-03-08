@@ -58,10 +58,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="hero-panel">
           <div className="hero-copy">
             <span className="eyebrow">Studde</span>
-            <h1>Studentkassan, omröstningar och besked i samma mobilvy.</h1>
+            <h1>Studentkassan, omröstningar och information.</h1>
             <p className="hero-text">
-              Varje elev ser sin utveckling, klassens total, aktuella announcements och öppna omröstningar. Edvin
-              sköter adminläget och kan lägga in pengar, posta meddelanden och starta nya röstningar.
+              Varje elev ser sin utveckling, klassens total, aktuell information och omröstningar. Edvin
+              sköter sida, så om frågetecken uppstår kontakta honom.
             </p>
             <div className="stat-grid">
               <article className="stat-card">
@@ -86,7 +86,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div className="login-header">
               <p className="eyebrow">Inloggning</p>
               <h2>Logga in på klassen</h2>
-              <p>Använd ditt användarnamn och ditt enkla lösenord för att komma in.</p>
+              <p>Använd ditt användarnamn och ditt enkla lösenord för att komma in. Användarnamnet är förnamn och efternamn i små bokstäver med punkt emellan, ex "karl.andersson" och lösenord endast namn i små bokstäver, ex "karl"</p>
             </div>
             {banner ? (
               <div className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div>
@@ -94,11 +94,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <form action={loginAction} className="stack">
               <label className="field">
                 <span>Användarnamn</span>
-                <input autoComplete="username" name="username" placeholder="t.ex. edvin.moberg" type="text" />
+                <input autoComplete="username" name="username" placeholder="t.ex. karl.andersson" type="text" />
               </label>
               <label className="field">
                 <span>Lösenord</span>
-                <input autoComplete="current-password" name="password" placeholder="t.ex. edvin" type="password" />
+                <input autoComplete="current-password" name="password" placeholder="t.ex. karl" type="password" />
               </label>
               <SubmitButton className="button button-primary" pendingLabel="Loggar in...">
                 Logga in
@@ -106,10 +106,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </form>
             <div className="info-callout">
               <strong>Nuvarande admin</strong>
-              <p>Edvin Moberg loggar in med användarnamn `edvin.moberg` och lösenord `edvin`.</p>
+              <p>Edvin hanterar hela sidan och är ansvarig för allt.</p>
             </div>
-            <Link className="text-link" href="https://www.studenten.se/">
-              Planera studenten vidare
+            <Link className="text-link" href="https://www.google.com/search?q=id%C3%A9er+f%C3%B6r+stundenten&rlz=1C1BYYL_svSE973SE973&oq=id%C3%A9er+f%C3%B6r+stundenten&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQIRgKGKABMgkIAhAhGAoYoAEyBwgDECEYnwUyBwgEECEYnwUyBwgFECEYnwUyBwgGECEYnwUyBwgHECEYnwUyBwgIECEYnwUyBwgJECEYnwXSAQg1MzkzajBqN6gCALACAA&sourceid=chrome&ie=UTF-8">
+              Ideér till studenten
             </Link>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div className="section-heading">
               <div>
                 <span className="eyebrow">Feed</span>
-                <h2>Announcements</h2>
+                <h2>Information</h2>
               </div>
             </div>
             <div className="feed-list">
