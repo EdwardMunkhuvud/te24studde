@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Till Linn och endast Linn</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#ffe1ec" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <style>
+      :root {
+        --bg: #fff4f8;
+        --bg-2: #ffe1ec;
+        --page-bg:
+          radial-gradient(circle at 20% 14%, rgba(255, 133, 184, 0.52), transparent 28%),
+          radial-gradient(circle at 80% 8%, rgba(255, 223, 236, 0.9), transparent 24%),
+          radial-gradient(circle at 50% 100%, rgba(255, 95, 158, 0.28), transparent 34%),
+          linear-gradient(145deg, #fff9fb 0%, #ffe4ef 48%, #ffd2e5 100%);
+        --ink: #4c1730;
+        --muted: #8a4a64;
+        --card: rgba(255, 255, 255, 0.84);
+        --pink: #ff5f9e;
+        --pink-dark: #d92f75;
+        --rose: #ff85b8;
+        --cream: #fffaf4;
+        --shadow: 0 24px 80px rgba(193, 44, 103, 0.22);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background:
+          linear-gradient(#ffe1ec, #ffe1ec) fixed,
+          var(--page-bg) fixed;
+        overscroll-behavior-y: none;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+        cursor: pointer;
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: var(--page-bg) fixed;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .page {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 100dvh;
+        padding: max(28px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+      }
+
+      .soft-shapes {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .soft-shapes span {
+        position: absolute;
+        display: block;
+        width: 120px;
+        height: 120px;
+        border-radius: 38% 62% 55% 45%;
+        background: rgba(255, 255, 255, 0.42);
+        filter: blur(1px);
+        animation: drift 16s ease-in-out infinite;
+      }
+
+      .soft-shapes span:nth-child(1) {
+        top: 10%;
+        left: 7%;
+      }
+
+      .soft-shapes span:nth-child(2) {
+        right: 6%;
+        top: 22%;
+        width: 86px;
+        height: 86px;
+        animation-delay: -4s;
+      }
+
+      .soft-shapes span:nth-child(3) {
+        left: 14%;
+        bottom: 12%;
+        width: 94px;
+        height: 94px;
+        animation-delay: -8s;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        width: min(760px, 100%);
+      }
+
+      .card {
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        gap: 22px;
+        padding: clamp(22px, 5vw, 44px);
+        border: 1px solid rgba(255, 255, 255, 0.74);
+        border-radius: 28px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(22px);
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.84), transparent 38%),
+          radial-gradient(circle at top right, rgba(255, 95, 158, 0.18), transparent 30%);
+      }
+
+      .content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        gap: clamp(18px, 4vw, 26px);
+      }
+
+      .kicker {
+        display: none;
+        width: fit-content;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 95, 158, 0.12);
+        color: var(--pink-dark);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(3rem, 16vw, 7rem);
+        line-height: 0.9;
+        letter-spacing: -0.055em;
+      }
+
+      .lead {
+        display: none;
+      }
+
+      .love-button {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      .message-wrap {
+        display: grid;
+        gap: 16px;
+        min-height: 240px;
+      }
+
+      .message-card {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        min-height: 230px;
+        padding: clamp(20px, 5vw, 30px);
+        border: 1px solid rgba(255, 95, 158, 0.16);
+        border-radius: 24px;
+        background:
+          linear-gradient(180deg, rgba(255, 250, 244, 0.92), rgba(255, 255, 255, 0.7)),
+          rgba(255, 255, 255, 0.78);
+        opacity: 0;
+        transform: translateY(28px) scale(0.88) rotate(-1.5deg);
+        transition:
+          opacity 0.52s ease,
+          transform 0.62s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .message-card.show {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        animation: messagePop 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .photo-frame {
+        position: relative;
+        display: none;
+        overflow: hidden;
+        width: min(100%, 440px);
+        justify-self: center;
+        aspect-ratio: 4 / 5;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 28px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.22)),
+          rgba(255, 217, 231, 0.52);
+        box-shadow: 0 24px 58px rgba(193, 44, 103, 0.24);
+        opacity: 0;
+        transform: translateY(20px) scale(0.94) rotate(1deg);
+        transition:
+          opacity 0.5s ease,
+          transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .photo-frame.visible {
+        display: block;
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0deg);
+      }
+
+      .photo-frame::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 32%),
+          radial-gradient(circle at 50% 100%, rgba(76, 23, 48, 0.18), transparent 42%);
+      }
+
+      .photo-frame img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        transform: scale(1.02);
+      }
+
+      .message-label {
+        display: none;
+      }
+
+      .message {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(2.25rem, 8vw, 4.6rem);
+        line-height: 1.08;
+        letter-spacing: -0.035em;
+      }
+
+      .audio-status {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      .controls {
+        display: none;
+      }
+
+      .ghost-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 10px 14px;
+        border: 1px solid rgba(217, 47, 117, 0.2);
+        border-radius: 999px;
+        color: var(--pink-dark);
+        background: rgba(255, 255, 255, 0.58);
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      .recording-panel {
+        display: none;
+        position: relative;
+        z-index: 30;
+        overflow: hidden;
+        border: 1px solid rgba(217, 47, 117, 0.14);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.62);
+        cursor: default;
+      }
+
+      .recording-panel.open {
+        display: block;
+      }
+
+      .recording-head {
+        display: grid;
+        gap: 6px;
+        padding: 16px;
+        border-bottom: 1px solid rgba(217, 47, 117, 0.12);
+      }
+
+      .recording-head strong {
+        font-size: 1rem;
+      }
+
+      .recording-head span {
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.5;
+      }
+
+      .recording-list {
+        display: grid;
+        max-height: 360px;
+        overflow: auto;
+      }
+
+      .recording-row {
+        display: grid;
+        gap: 5px;
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(217, 47, 117, 0.08);
+      }
+
+      .recording-row:last-child {
+        border-bottom: 0;
+      }
+
+      .recording-row code {
+        width: fit-content;
+        padding: 4px 8px;
+        border-radius: 999px;
+        color: var(--pink-dark);
+        background: rgba(255, 95, 158, 0.1);
+        font-size: 0.84rem;
+      }
+
+      .recording-row span {
+        line-height: 1.45;
+      }
+
+      .floating-heart {
+        position: fixed;
+        z-index: 10;
+        pointer-events: none;
+        color: var(--pink-dark);
+        font-size: var(--size, 24px);
+        text-shadow: 0 10px 28px rgba(217, 47, 117, 0.24);
+        animation: floatHeart 2.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .burst-piece {
+        position: fixed;
+        z-index: 11;
+        pointer-events: none;
+        width: var(--size, 10px);
+        height: var(--size, 10px);
+        border-radius: 999px;
+        background: var(--color, #ff5f9e);
+        box-shadow: 0 10px 24px rgba(217, 47, 117, 0.22);
+        animation: burstPiece 1.25s ease-out forwards;
+      }
+
+      .love-ring {
+        position: fixed;
+        z-index: 9;
+        pointer-events: none;
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(255, 95, 158, 0.42);
+        border-radius: 999px;
+        animation: loveRing 0.88s ease-out forwards;
+      }
+
+      .secret-hotspot {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        width: 74px;
+        height: 74px;
+        padding: 0;
+        border: 0;
+        opacity: 0;
+        background: transparent;
+        cursor: default;
+      }
+
+      .sparkle {
+        position: absolute;
+        pointer-events: none;
+        color: var(--rose);
+        font-size: 20px;
+        opacity: 0.8;
+        animation: twinkle 2.8s ease-in-out infinite;
+      }
+
+      .sparkle.one {
+        top: 18px;
+        right: 22px;
+      }
+
+      .sparkle.two {
+        bottom: 18px;
+        left: 24px;
+        animation-delay: -1.2s;
+      }
+
+      @keyframes drift {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0) rotate(0deg);
+        }
+
+        50% {
+          transform: translate3d(18px, -22px, 0) rotate(9deg);
+        }
+      }
+
+      @keyframes floatHeart {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, 0) scale(0.35) rotate(0deg);
+        }
+
+        12% {
+          opacity: 1;
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(calc(-50% + var(--x)), var(--y)) scale(1.8) rotate(var(--r));
+        }
+      }
+
+      @keyframes burstPiece {
+        0% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.25) rotate(var(--r));
+        }
+      }
+
+      @keyframes loveRing {
+        0% {
+          opacity: 0.6;
+          transform: translate(-50%, -50%) scale(0.2);
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(12);
+        }
+      }
+
+      @keyframes messagePop {
+        0% {
+          filter: brightness(1);
+        }
+
+        38% {
+          filter: brightness(1.08);
+          box-shadow: 0 26px 80px rgba(217, 47, 117, 0.22);
+        }
+
+        100% {
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(0.9) rotate(0deg);
+        }
+
+        50% {
+          opacity: 1;
+          transform: scale(1.15) rotate(10deg);
+        }
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          place-items: start center;
+          padding-top: max(18px, env(safe-area-inset-top));
+        }
+
+        .card {
+          min-height: calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+          border-radius: 24px;
+          padding: 24px 18px;
+        }
+
+        .message-wrap {
+          min-height: 0;
+          gap: 14px;
+        }
+
+        .message-card {
+          min-height: 190px;
+          padding: 22px 20px;
+          border-radius: 22px;
+        }
+
+        .message {
+          font-size: clamp(2rem, 12vw, 3.3rem);
+        }
+
+        .photo-frame {
+          width: min(100%, 360px);
+          max-height: 42dvh;
+          border-radius: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="soft-shapes" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <section class="shell" aria-label="En hemlig sida till Linn">
+        <div class="card">
+          <span class="sparkle one" aria-hidden="true">✦</span>
+          <span class="sparkle two" aria-hidden="true">✧</span>
+          <div class="content">
+            <div>
+              <h1>Hej min älskling</h1>
+            </div>
+
+            <button class="love-button" id="loveButton" type="button">
+              <span class="heart" aria-hidden="true">♡</span>
+              Ge mig ett meddelande
+            </button>
+
+            <div class="message-wrap" aria-live="polite">
+              <article class="message-card" id="messageCard">
+                <span class="message-label" id="messageLabel">Meddelande 01</span>
+                <p class="message" id="messageText"></p>
+                <div class="audio-status" id="audioStatus">Spela in filerna i <strong>public/linn-ljud</strong> för att rösten ska höras.</div>
+              </article>
+              <figure class="photo-frame" id="photoFrame" aria-label="Bild på mig">
+                <img id="lovePhoto" alt="Bild på mig" />
+              </figure>
+            </div>
+
+            <div class="controls">
+              <button class="ghost-button" id="replayButton" type="button">Spela upp igen</button>
+              <button class="ghost-button" id="toggleListButton" type="button">Visa inspelningslista</button>
+            </div>
+
+            <section class="recording-panel" id="recordingPanel" aria-label="Inspelningslista">
+              <div class="recording-head">
+                <strong>Inspelningslista</strong>
+                <span>
+                  Spela in ett meddelande per fil och döp dem exakt som filnamnen här:
+                  <strong>001.m4a</strong>, <strong>002.m4a</strong> och så vidare i mappen <strong>public/linn-ljud</strong>.
+                </span>
+              </div>
+              <div class="recording-list" id="recordingList"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+      <button class="secret-hotspot" id="secretHotspot" type="button" aria-label="Visa inspelningslista"></button>
+    </main>
+
+    <script>
+      const messages = [
+       { id: "001", text: "Jag saknar dig jättemycket, även när vi precis har setts.", audio: "linn-ljud/001.m4a" },
+        { id: "002", text: "Jag älskar dig mer än allt, Linn Liv.", audio: "linn-ljud/002.m4a" },
+        { id: "003", text: "Du är min favoritperson i heeeeeela världen.", audio: "linn-ljud/003.m4a" },
+        { id: "004", text: "Jag blir lugn bara av att tänka på dig.", audio: "linn-ljud/004.m4a" },
+        { id: "005", text: "Sex månader med dig har känts som början på allt jag vill ha.", audio: "linn-ljud/005.m4a" },
+        { id: "006", text: "Du är vackrare än vad du själv förstår.", audio: "linn-ljud/006.m4a" },
+        { id: "007", text: "Jag vill hålla din hand genom allt som kommer.", audio: "linn-ljud/007.m4a" },
+        { id: "008", text: "Jag är så stolt över att få vara din.", audio: "linn-ljud/008.m4a" },
+        { id: "009", text: "När du ler åt mig känns hela dagen räddad.", audio: "linn-ljud/009.m4a" },
+        { id: "010", text: "Jag vill pussa dig tills du börjar skratta, sen dra av dig kläderna.", audio: "linn-ljud/010.m4a" },
+        { id: "011", text: "Du gör mig kär på nytt hela tiden.", audio: "linn-ljud/011.m4a" },
+        { id: "012", text: "Jag längtar efter nästa gång jag får somna bredvid dig.", audio: "linn-ljud/012.m4a" },
+        { id: "013", text: "Du är mitt hem, min trygghet och bästa vän.", audio: "linn-ljud/013.m4a" },
+        { id: "014", text: "Jag vill ha fler morgnar, fler kvällar och fler dagar vardagar med dig.", audio: "linn-ljud/014.m4a" },
+        { id: "015", text: "Jag kan inte fatta att jag fick just dig.", audio: "linn-ljud/015.m4a" },
+        { id: "016", text: "Jag vill hångla med dig just nu, djupt och länge.", audio: "linn-ljud/016.m4a" },
+        { id: "017", text: "Du är så fin att jag tappar tanken.", audio: "linn-ljud/017.m4a" },
+        { id: "018", text: "Jag vill ligga nära dig, känna din nakna kropp mot min och aldrig behöva flytta på mig.", audio: "linn-ljud/018.m4a" },
+        { id: "019", text: "Du får mig att vilja bli bättre, hårdare och kåtare.", audio: "linn-ljud/019.m4a" },
+        { id: "020", text: "Jag älskar hur du får allt att kännas mer på riktigt.", audio: "linn-ljud/020.m4a" },
+        { id: "021", text: "Jag vill ha dig nära, helst vara inne i dig.", audio: "linn-ljud/021.m4a" },
+        { id: "022", text: "Du är den personen jag vill berätta allt för.", audio: "linn-ljud/022.m4a" },
+        { id: "023", text: "Jag vill bygga en familj med dig, vill du börja med att bli gravid?.", audio: "linn-ljud/023.m4a" },
+        { id: "024", text: "Tanken på en familj med dig gör mig helt varm i hjärtat.", audio: "linn-ljud/024.m4a" },
+        { id: "025", text: "Du kommer bli världens finaste mamma, med mina barn.", audio: "linn-ljud/025.m4a" },
+        { id: "026", text: "Jag vill välja dig igen och igen och igen.", audio: "linn-ljud/026.m4a" },
+        { id: "027", text: "Jag vill hångla med dig tills vi tappar tiden, sen knulla tills du blir fylld.", audio: "linn-ljud/027.m4a" },
+        { id: "028", text: "Du är sexig, snygg, smart och alldeles för lätt att sakna.", audio: "linn-ljud/028.m4a" },
+        { id: "029", text: "Jag vill massera varje centimeter av din kropp.", audio: "linn-ljud/029.m4a" },
+        { id: "030", text: "Du får mitt hjärta att fastna i vinkelvolten.", audio: "linn-ljud/030.m4a" },
+        { id: "031", text: "Jag vill få dig att känna dig älskad varje dag.", audio: "linn-ljud/031.m4a" },
+        { id: "032", text: "Jag vill ha dina kramar, dina pussar och hela din nakna kropp i min säng.", audio: "linn-ljud/032.m4a" },
+        { id: "033", text: "Jag älskar dig när du är glad, trött, busig, stressad och allt däremellan.", audio: "linn-ljud/033.m4a" },
+        { id: "034", text: "När jag kollar in i dina ögon ser jag vår framtid.", audio: "linn-ljud/034.m4a" },
+        { id: "035", text: "Jag tänker på dig mer än jag erkänner.", audio: "linn-ljud/035.m4a" },
+        { id: "036", text: "Jag vill vara nära nog att känna din hud mot min medan jag är inne i dig.", audio: "linn-ljud/036.m4a" },
+        { id: "037", text: "Du är min vackraste Linn, och jag är sååååå jävla kär i dig.", audio: "linn-ljud/037.m4a" },
+        { id: "038", text: "Jag vill pussa hela ditt ansikte, sen din hals och dina bröst tills du ber om min kuk.", audio: "linn-ljud/038.m4a" },
+        { id: "039", text: "Du gör mig galen på det allra bästa sättet.", audio: "linn-ljud/039.m4a" },
+        { id: "040", text: "Jag vill att du ska känna hur mycket jag vill ha dig, hur hårt jag vill knulla dig.", audio: "linn-ljud/040.m4a" },
+        { id: "041", text: "Du är min dröm, fast mycket bättre eftersom du är verklig.", audio: "linn-ljud/041.m4a" },
+        { id: "042", text: "Jag vill spendera fler månader, år och hela livet med dig.", audio: "linn-ljud/042.m4a" },
+        { id: "043", text: "Jag blir fortfarande pirrig varje gång jag ser ditt vackra leende.", audio: "linn-ljud/043.m4a" },
+        { id: "044", text: "Jag vill ha en kväll med bara dig, mig och alldeles för mycket hångel.", audio: "linn-ljud/044.m4a" },
+        { id: "045", text: "Du är min älskling, min bästa vän och mitt största crush NÅNSIN!", audio: "linn-ljud/045.m4a" },
+        { id: "046", text: "Jag vill inte vakna en dag utan att du ligger bredvid mig.", audio: "linn-ljud/046.m4a" },
+        { id: "047", text: "Jag vill göra dig lycklig på alla sätt jag kan.", audio: "linn-ljud/047.m4a" },
+        { id: "048", text: "Jag älskar din röst, ditt skratt och din autism.", audio: "linn-ljud/048.m4a" },
+        { id: "049", text: "Jag vill ha dig, jag vill välja dig och jag vill stanna hos dig för alltid.", audio: "linn-ljud/049.m4a" },
+        { id: "050", text: "Grattis till våra sex månader, min och endast min Linn. Jag älskar dig sååååå otroligt mycket.", audio: "linn-ljud/050.m4a" }
+      ];
+
+      const loveButton = document.querySelector("#loveButton");
+      const replayButton = document.querySelector("#replayButton");
+      const toggleListButton = document.querySelector("#toggleListButton");
+      const messageCard = document.querySelector("#messageCard");
+      const messageLabel = document.querySelector("#messageLabel");
+      const messageText = document.querySelector("#messageText");
+      const audioStatus = document.querySelector("#audioStatus");
+      const recordingPanel = document.querySelector("#recordingPanel");
+      const recordingList = document.querySelector("#recordingList");
+      const secretHotspot = document.querySelector("#secretHotspot");
+      const photoFrame = document.querySelector("#photoFrame");
+      const lovePhoto = document.querySelector("#lovePhoto");
+
+      const photoFiles = Array.from({ length: 30 }, (_, index) => {
+        const id = String(index + 1).padStart(3, "0");
+        return `linn-bilder/${id}.jpeg`;
+      });
+
+      let currentMessage = messages[0];
+      let lastIndex = -1;
+      let lastPhotoIndex = -1;
+      let availablePhotos = [];
+      let audio = new Audio();
+
+      function pickMessage(event) {
+        if (event?.target?.closest("#recordingPanel, #secretHotspot")) {
+          return;
+        }
+
+        let index = Math.floor(Math.random() * messages.length);
+        if (messages.length > 1) {
+          while (index === lastIndex) {
+            index = Math.floor(Math.random() * messages.length);
+          }
+        }
+
+        lastIndex = index;
+        currentMessage = messages[index];
+        showMessage(currentMessage, event);
+      }
+
+      function showMessage(item, event) {
+        messageCard.classList.remove("show");
+
+        window.setTimeout(() => {
+          messageLabel.textContent = `Meddelande ${item.id}`;
+          messageText.textContent = item.text;
+          messageCard.classList.add("show");
+          showRandomPhoto();
+          playAudio(item);
+          burstHearts(event);
+        }, 130);
+      }
+
+      function showRandomPhoto() {
+        photoFrame.classList.remove("visible");
+
+        if (availablePhotos.length > 0) {
+          let index = Math.floor(Math.random() * availablePhotos.length);
+          if (availablePhotos.length > 1) {
+            while (index === lastPhotoIndex) {
+              index = Math.floor(Math.random() * availablePhotos.length);
+            }
+          }
+
+          lastPhotoIndex = index;
+          showPhoto(availablePhotos[index]);
+          return;
+        }
+
+        tryPhoto(0, 0);
+      }
+
+      function tryPhoto(startIndex, attempts) {
+        if (attempts >= photoFiles.length) {
+          lovePhoto.removeAttribute("src");
+          photoFrame.classList.remove("visible");
+          return;
+        }
+
+        const index = (startIndex + attempts) % photoFiles.length;
+        const src = photoFiles[index];
+        lovePhoto.onload = () => showPhoto(src);
+        lovePhoto.onerror = () => tryPhoto(startIndex, attempts + 1);
+        lovePhoto.src = src;
+      }
+
+      function showPhoto(src) {
+        lovePhoto.onload = null;
+        lovePhoto.onerror = null;
+        if (lovePhoto.getAttribute("src") !== src) {
+          lovePhoto.src = src;
+        }
+        photoFrame.classList.add("visible");
+      }
+
+      function preloadPhotos() {
+        photoFiles.forEach((src) => {
+          const image = new Image();
+          image.onload = () => {
+            if (!availablePhotos.includes(src)) {
+              availablePhotos = [...availablePhotos, src];
+            }
+          };
+          image.src = src;
+        });
+      }
+
+      function playAudio(item) {
+        audio.pause();
+        audio = new Audio(item.audio);
+        audioStatus.textContent = `Försöker spela upp ${item.audio}`;
+        audio.addEventListener("playing", () => {
+          audioStatus.textContent = `Spelar upp ${item.audio}`;
+        });
+        audio.addEventListener("error", () => {
+          audioStatus.textContent = `Lägg din inspelning här: public/${item.audio}`;
+        });
+
+        audio.play()
+          .then(() => {})
+          .catch(() => {
+            audioStatus.textContent = `Lägg din inspelning här: public/${item.audio}`;
+          });
+      }
+
+      function burstHearts(event) {
+        const fallbackBox = messageCard.getBoundingClientRect();
+        const originX = event?.clientX ?? fallbackBox.left + fallbackBox.width / 2;
+        const originY = event?.clientY ?? fallbackBox.top + fallbackBox.height / 2;
+
+        const ring = document.createElement("span");
+        ring.className = "love-ring";
+        ring.style.left = `${originX}px`;
+        ring.style.top = `${originY}px`;
+        document.body.appendChild(ring);
+        ring.addEventListener("animationend", () => ring.remove());
+
+        for (let i = 0; i < 38; i += 1) {
+          const heart = document.createElement("span");
+          heart.className = "floating-heart";
+          heart.textContent = i % 5 === 0 ? "✦" : i % 3 === 0 ? "♡" : "♥";
+          heart.style.left = `${originX + (Math.random() * 160 - 80)}px`;
+          heart.style.top = `${originY + (Math.random() * 80 - 40)}px`;
+          heart.style.setProperty("--x", `${Math.random() * 420 - 210}px`);
+          heart.style.setProperty("--y", `${Math.random() * -320 - 120}px`);
+          heart.style.setProperty("--r", `${Math.random() * 220 - 110}deg`);
+          heart.style.setProperty("--size", `${Math.random() * 30 + 18}px`);
+          heart.style.animationDelay = `${Math.random() * 0.22}s`;
+          document.body.appendChild(heart);
+          heart.addEventListener("animationend", () => heart.remove());
+        }
+
+        for (let i = 0; i < 30; i += 1) {
+          const piece = document.createElement("span");
+          piece.className = "burst-piece";
+          piece.style.left = `${originX}px`;
+          piece.style.top = `${originY}px`;
+          piece.style.setProperty("--x", `${Math.random() * 520 - 260}px`);
+          piece.style.setProperty("--y", `${Math.random() * 420 - 260}px`);
+          piece.style.setProperty("--r", `${Math.random() * 360}deg`);
+          piece.style.setProperty("--size", `${Math.random() * 10 + 7}px`);
+          piece.style.setProperty("--color", ["#ff5f9e", "#ffd1e3", "#ffffff", "#d92f75"][i % 4]);
+          piece.style.animationDelay = `${Math.random() * 0.12}s`;
+          document.body.appendChild(piece);
+          piece.addEventListener("animationend", () => piece.remove());
+        }
+      }
+
+      function renderRecordingList() {
+        recordingList.innerHTML = messages
+          .map((item) => `
+            <div class="recording-row">
+              <code>${item.id}.m4a</code>
+              <span>${item.text}</span>
+            </div>
+          `)
+          .join("");
+      }
+
+      document.addEventListener("click", pickMessage);
+      replayButton.addEventListener("click", () => playAudio(currentMessage));
+      secretHotspot.addEventListener("click", (event) => {
+        event.stopPropagation();
+        recordingPanel.classList.toggle("open");
+      });
+
+      renderRecordingList();
+      preloadPhotos();
+    </script>
+  </body>
+</html>
