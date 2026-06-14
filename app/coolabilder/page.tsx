@@ -407,42 +407,53 @@ export default async function CoolaBilderPage() {
             <span>Lägg filer i public/coolabilder-media och ladda om sidan.</span>
           </section>
         ) : (
-          groups.map((group) => (
-            <section className={styles.dateGroup} key={group.dateKey}>
-              <div className={styles.dateHeading}>
-                <h2>{group.dateLabel}</h2>
-                <span>{group.items.length} filer</span>
-              </div>
-              <div className={styles.grid}>
-                {group.items.map((item) => (
-                  <article className={styles.card} key={item.href}>
-                    <a className={styles.mediaLink} href={item.href}>
-                      {item.kind === "Bild" ? (
-                        <img className={styles.preview} src={item.href} alt={item.name} loading="lazy" />
-                      ) : (
-                        <div className={styles.videoWrap}>
-                          <video preload="metadata" src={item.href} muted playsInline />
-                          <span className={styles.typeBadge}>Video</span>
-                        </div>
-                      )}
-                    </a>
-                    <div className={styles.meta}>
-                      <span className={styles.name} title={item.name}>
-                        {item.name}
-                      </span>
-                      <div className={styles.details}>
-                        <span>{item.kind}</span>
-                        <span>{item.sizeLabel}</span>
-                      </div>
-                      <a className={styles.download} href={item.href} download>
-                        Ladda ner
+          groups.map((group) => {
+            const groupImageCount = group.items.filter((item) => item.kind === "Bild").length;
+
+            return (
+              <section className={styles.dateGroup} key={group.dateKey}>
+                <div className={styles.dateHeading}>
+                  <h2>{group.dateLabel}</h2>
+                  <div className={styles.dateActions}>
+                    <span>{group.items.length} filer</span>
+                    {groupImageCount > 0 ? (
+                      <a className={styles.groupDownload} href={`/coolabilder/download/${group.dateKey}`} download>
+                        Ladda ner {groupImageCount} bilder
                       </a>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ))
+                    ) : null}
+                  </div>
+                </div>
+                <div className={styles.grid}>
+                  {group.items.map((item) => (
+                    <article className={styles.card} key={item.href}>
+                      <a className={styles.mediaLink} href={item.href}>
+                        {item.kind === "Bild" ? (
+                          <img className={styles.preview} src={item.href} alt={item.name} loading="lazy" />
+                        ) : (
+                          <div className={styles.videoWrap}>
+                            <video preload="metadata" src={item.href} muted playsInline />
+                            <span className={styles.typeBadge}>Video</span>
+                          </div>
+                        )}
+                      </a>
+                      <div className={styles.meta}>
+                        <span className={styles.name} title={item.name}>
+                          {item.name}
+                        </span>
+                        <div className={styles.details}>
+                          <span>{item.kind}</span>
+                          <span>{item.sizeLabel}</span>
+                        </div>
+                        <a className={styles.download} href={item.href} download>
+                          Ladda ner
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            );
+          })
         )}
       </div>
     </main>

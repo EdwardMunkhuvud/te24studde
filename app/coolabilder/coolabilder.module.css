@@ -100,6 +100,29 @@
   white-space: nowrap;
 }
 
+.dateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.groupDownload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  color: #f8fafc;
+  background: linear-gradient(135deg, #0ea5e9, #22c55e);
+  box-shadow: 0 10px 24px rgba(14, 165, 233, 0.18);
+  font-size: 0.92rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -198,6 +221,20 @@
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+
+  .dateHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dateActions {
+    justify-content: flex-start;
+  }
+
+  .groupDownload {
+    min-height: 36px;
+    font-size: 0.88rem;
   }
 
   .card {
