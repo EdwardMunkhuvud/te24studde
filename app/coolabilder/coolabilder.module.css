@@ -123,6 +123,44 @@
   white-space: nowrap;
 }
 
+.shareWrap {
+  display: grid;
+  gap: 5px;
+}
+
+.librarySave {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 9px 13px;
+  border: 0;
+  border-radius: 999px;
+  color: #0f172a;
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1px rgba(15, 23, 42, 0.1),
+    0 10px 24px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.librarySave:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.shareStatus {
+  max-width: 220px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -209,6 +247,15 @@
   font-weight: 900;
 }
 
+.meta .shareWrap,
+.meta .librarySave {
+  width: 100%;
+}
+
+.meta .librarySave {
+  border-radius: 12px;
+}
+
 @media (max-width: 620px) {
   .page {
     padding: 20px 12px 32px;
@@ -233,6 +280,11 @@
   }
 
   .groupDownload {
+    min-height: 36px;
+    font-size: 0.88rem;
+  }
+
+  .librarySave {
     min-height: 36px;
     font-size: 0.88rem;
   }

@@ -2,6 +2,7 @@
 import { open, readdir, stat } from "fs/promises";
 import path from "path";
 
+import { SaveToLibraryButton } from "./save-to-library-button";
 import styles from "./coolabilder.module.css";
 
 export const dynamic = "force-dynamic";
@@ -409,6 +410,7 @@ export default async function CoolaBilderPage() {
         ) : (
           groups.map((group) => {
             const groupImageCount = group.items.filter((item) => item.kind === "Bild").length;
+            const groupShareFiles = group.items.map(({ href, kind, name }) => ({ href, kind, name }));
 
             return (
               <section className={styles.dateGroup} key={group.dateKey}>
@@ -416,9 +418,13 @@ export default async function CoolaBilderPage() {
                   <h2>{group.dateLabel}</h2>
                   <div className={styles.dateActions}>
                     <span>{group.items.length} filer</span>
+                    <SaveToLibraryButton
+                      files={groupShareFiles}
+                      label={`Spara ${group.items.length} i Bilder`}
+                    />
                     {groupImageCount > 0 ? (
                       <a className={styles.groupDownload} href={`/coolabilder/download/${group.dateKey}`} download>
-                        Ladda ner {groupImageCount} bilder
+                        ZIP: {groupImageCount} bilder
                       </a>
                     ) : null}
                   </div>
@@ -447,6 +453,10 @@ export default async function CoolaBilderPage() {
                         <a className={styles.download} href={item.href} download>
                           Ladda ner
                         </a>
+                        <SaveToLibraryButton
+                          files={[{ href: item.href, kind: item.kind, name: item.name }]}
+                          label="Spara i Bilder"
+                        />
                       </div>
                     </article>
                   ))}
