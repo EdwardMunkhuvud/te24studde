@@ -416,7 +416,7 @@ export default async function CoolaBilderPage() {
               <div className={styles.grid}>
                 {group.items.map((item) => (
                   <article className={styles.card} key={item.href}>
-                    <a className={styles.mediaLink} href={item.href} target="_blank" rel="noreferrer">
+                    <a className={styles.mediaLink} href={item.href}>
                       {item.kind === "Bild" ? (
                         <img className={styles.preview} src={item.href} alt={item.name} loading="lazy" />
                       ) : (
