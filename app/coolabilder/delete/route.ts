@@ -3,6 +3,7 @@ import { timingSafeEqual } from "crypto";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 import { getR2Config, isR2Configured } from "../../../lib/r2";
+import { getR2ThumbnailKey } from "../../../lib/r2-thumbnails";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,10 @@ export async function DELETE(request: Request) {
   }
 
   const { bucket, client } = getR2Config();
-  await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  await Promise.all([
+    client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key })),
+    client.send(new DeleteObjectCommand({ Bucket: bucket, Key: getR2ThumbnailKey(key) })),
+  ]);
 
   return Response.json({ ok: true });
 }

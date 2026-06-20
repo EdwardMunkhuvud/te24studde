@@ -263,7 +263,14 @@ export function MediaLibrary({ initialGroups, initialMedia }: Props) {
                     <article className={styles.card} key={item.href}>
                       <a className={styles.mediaLink} href={item.href}>
                         {item.kind === "Bild" ? (
-                          <img className={styles.preview} src={item.href} alt={item.name} loading="lazy" />
+                          <img
+                            alt={item.name}
+                            className={styles.preview}
+                            decoding="async"
+                            fetchPriority="low"
+                            loading="lazy"
+                            src={item.thumbnailHref}
+                          />
                         ) : (
                           <div className={styles.videoWrap}>
                             <video preload="metadata" src={item.href} muted playsInline />

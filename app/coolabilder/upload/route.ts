@@ -4,6 +4,7 @@ import { Readable } from "stream";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 import { getR2Config, isR2Configured } from "../../../lib/r2";
+import { ensureR2Thumbnail } from "../../../lib/r2-thumbnails";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,10 @@ export async function POST(request: Request) {
       "original-name": encodeURIComponent(originalName),
     },
   }));
+
+  if (contentType.startsWith("image/")) {
+    await ensureR2Thumbnail(key).catch((error) => console.error("Kunde inte skapa miniatyr:", error));
+  }
 
   return Response.json({ key, name: originalName });
 }

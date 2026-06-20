@@ -8,6 +8,7 @@ import {
   listR2MediaObjects,
   parseR2MediaKey,
 } from "../../lib/r2";
+import { getR2ThumbnailKey } from "../../lib/r2-thumbnails";
 import { MediaLibrary } from "./media-library";
 import styles from "./coolabilder.module.css";
 
@@ -23,6 +24,7 @@ export type MediaItem = {
   r2Key: string | null;
   shareHref: string;
   sizeLabel: string;
+  thumbnailHref: string;
   timestamp: number;
 };
 
@@ -77,6 +79,7 @@ async function getMediaFiles(directory: string, relativeDirectory = ""): Promise
         r2Key: null,
         shareHref: href,
         sizeLabel: formatSize(fileStat.size),
+        thumbnailHref: href,
         timestamp,
       };
 
@@ -111,14 +114,17 @@ async function getR2MediaFiles(): Promise<MediaItem[]> {
       return null;
     }
 
+    const href = await getR2MediaUrl(object.Key);
+
     return {
       dateKey: parsed.dateKey,
       dateLabel: formatDate(new Date(`${parsed.dateKey}T12:00:00Z`)),
-      href: await getR2MediaUrl(object.Key),
+      href,
       kind: isImage ? "Bild" as const : "Video" as const,
       name: parsed.name,
       r2Key: object.Key,
       sizeLabel: formatSize(object.Size ?? 0),
+      thumbnailHref: isImage ? await getR2MediaUrl(getR2ThumbnailKey(object.Key)) : href,
       timestamp: parsed.timestamp,
       shareHref: `/coolabilder/media/${object.Key.split("/").map(encodeURIComponent).join("/")}`,
     };
