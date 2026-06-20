@@ -2,13 +2,22 @@ import { createReadStream } from "fs";
 import { open, readdir, stat } from "fs/promises";
 import path from "path";
 
+import {
+  getR2Object,
+  isR2Configured,
+  listR2MediaObjects,
+  parseR2MediaKey,
+} from "../../../../lib/r2";
+
 export const dynamic = "force-dynamic";
 
 type ImageFile = {
-  absolutePath: string;
+  absolutePath?: string;
   dateKey: string;
   name: string;
   relativePath: string;
+  r2Key?: string;
+  size: number;
   timestamp: number;
 };
 
@@ -24,7 +33,8 @@ export async function GET(_request: Request, { params }: { params: { date: strin
     return new Response("Ogiltigt datum.", { status: 400 });
   }
 
-  const images = (await getImageFiles(mediaDirectory))
+  const allImages = isR2Configured() ? await getR2ImageFiles() : await getImageFiles(mediaDirectory);
+  const images = allImages
     .filter((item) => item.dateKey === date)
     .sort(compareImageFiles);
 
@@ -76,6 +86,7 @@ async function getImageFiles(directory: string, relativeDirectory = ""): Promise
           dateKey,
           name: entry.name,
           relativePath: relativePath.replaceAll(path.sep, "/"),
+          size: fileStat.size,
           timestamp,
         },
       ];
@@ -83,6 +94,31 @@ async function getImageFiles(directory: string, relativeDirectory = ""): Promise
   );
 
   return items.flat();
+}
+
+async function getR2ImageFiles(): Promise<ImageFile[]> {
+  const objects = await listR2MediaObjects();
+
+  return objects.flatMap((object) => {
+    if (!object.Key) {
+      return [];
+    }
+
+    const parsed = parseR2MediaKey(object.Key);
+
+    if (!parsed || !supportedImages.has(path.extname(parsed.name).toLowerCase())) {
+      return [];
+    }
+
+    return [{
+      dateKey: parsed.dateKey,
+      name: parsed.name,
+      r2Key: object.Key,
+      relativePath: parsed.name,
+      size: object.Size ?? 0,
+      timestamp: parsed.timestamp,
+    }];
+  });
 }
 
 async function getBestTimestamp(absolutePath: string, fileName: string, extension: string, fallback: number) {
@@ -287,7 +323,6 @@ async function writeZip(files: ImageFile[], controller: ReadableStreamDefaultCon
 
   for (const file of files) {
     const fileName = Buffer.from(file.relativePath, "utf8");
-    const fileStat = await stat(file.absolutePath);
     const { dosDate, dosTime } = toDosDateTime(new Date(file.timestamp));
     const localHeader = Buffer.alloc(30);
 
@@ -308,7 +343,9 @@ async function writeZip(files: ImageFile[], controller: ReadableStreamDefaultCon
 
     let crc = 0xffffffff;
 
-    for await (const chunk of createReadStream(file.absolutePath)) {
+    const source = await getImageSource(file);
+
+    for await (const chunk of source) {
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       crc = crc32Update(crc, buffer);
       controller.enqueue(buffer);
@@ -320,8 +357,8 @@ async function writeZip(files: ImageFile[], controller: ReadableStreamDefaultCon
 
     dataDescriptor.writeUInt32LE(0x08074b50, 0);
     dataDescriptor.writeUInt32LE(crc, 4);
-    dataDescriptor.writeUInt32LE(fileStat.size, 8);
-    dataDescriptor.writeUInt32LE(fileStat.size, 12);
+    dataDescriptor.writeUInt32LE(file.size, 8);
+    dataDescriptor.writeUInt32LE(file.size, 12);
     controller.enqueue(dataDescriptor);
 
     const centralHeader = Buffer.alloc(46);
@@ -334,8 +371,8 @@ async function writeZip(files: ImageFile[], controller: ReadableStreamDefaultCon
     centralHeader.writeUInt16LE(dosTime, 12);
     centralHeader.writeUInt16LE(dosDate, 14);
     centralHeader.writeUInt32LE(crc, 16);
-    centralHeader.writeUInt32LE(fileStat.size, 20);
-    centralHeader.writeUInt32LE(fileStat.size, 24);
+    centralHeader.writeUInt32LE(file.size, 20);
+    centralHeader.writeUInt32LE(file.size, 24);
     centralHeader.writeUInt16LE(fileName.length, 28);
     centralHeader.writeUInt16LE(0, 30);
     centralHeader.writeUInt16LE(0, 32);
@@ -345,7 +382,7 @@ async function writeZip(files: ImageFile[], controller: ReadableStreamDefaultCon
     centralHeader.writeUInt32LE(offset, 42);
 
     centralParts.push(centralHeader, fileName);
-    offset += localHeader.length + fileName.length + fileStat.size + dataDescriptor.length;
+    offset += localHeader.length + fileName.length + file.size + dataDescriptor.length;
   }
 
   const centralDirectory = Buffer.concat(centralParts);
@@ -362,6 +399,24 @@ async function writeZip(files: ImageFile[], controller: ReadableStreamDefaultCon
 
   controller.enqueue(centralDirectory);
   controller.enqueue(endOfCentralDirectory);
+}
+
+async function getImageSource(file: ImageFile): Promise<AsyncIterable<Uint8Array>> {
+  if (file.r2Key) {
+    const response = await getR2Object(file.r2Key);
+
+    if (!response.Body) {
+      throw new Error(`R2 returnerade inget innehåll för ${file.name}.`);
+    }
+
+    return response.Body as AsyncIterable<Uint8Array>;
+  }
+
+  if (!file.absolutePath) {
+    throw new Error(`Lokal sökväg saknas för ${file.name}.`);
+  }
+
+  return createReadStream(file.absolutePath);
 }
 
 function toDosDateTime(date: Date) {

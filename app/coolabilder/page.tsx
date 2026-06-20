@@ -2,6 +2,12 @@
 import { open, readdir, stat } from "fs/promises";
 import path from "path";
 
+import {
+  getR2MediaUrl,
+  isR2Configured,
+  listR2MediaObjects,
+  parseR2MediaKey,
+} from "../../lib/r2";
 import { SaveToLibraryButton } from "./save-to-library-button";
 import styles from "./coolabilder.module.css";
 
@@ -14,6 +20,7 @@ type MediaItem = {
   href: string;
   kind: "Bild" | "Video";
   name: string;
+  shareHref: string;
   sizeLabel: string;
   timestamp: number;
 };
@@ -66,6 +73,7 @@ async function getMediaFiles(directory: string, relativeDirectory = ""): Promise
         href,
         kind: isImage ? "Bild" : "Video",
         name: entry.name,
+        shareHref: href,
         sizeLabel: formatSize(fileStat.size),
         timestamp,
       };
@@ -77,6 +85,43 @@ async function getMediaFiles(directory: string, relativeDirectory = ""): Promise
   );
 
   return items.flat();
+}
+
+async function getR2MediaFiles(): Promise<MediaItem[]> {
+  const objects = await listR2MediaObjects();
+
+  const items = await Promise.all(objects.map(async (object) => {
+    if (!object.Key) {
+      return null;
+    }
+
+    const parsed = parseR2MediaKey(object.Key);
+
+    if (!parsed || !Number.isFinite(parsed.timestamp)) {
+      return null;
+    }
+
+    const extension = path.extname(parsed.name).toLowerCase();
+    const isImage = supportedImages.has(extension);
+    const isVideo = supportedVideos.has(extension);
+
+    if (!isImage && !isVideo) {
+      return null;
+    }
+
+    return {
+      dateKey: parsed.dateKey,
+      dateLabel: formatDate(new Date(`${parsed.dateKey}T12:00:00Z`)),
+      href: await getR2MediaUrl(object.Key),
+      kind: isImage ? "Bild" as const : "Video" as const,
+      name: parsed.name,
+      sizeLabel: formatSize(object.Size ?? 0),
+      timestamp: parsed.timestamp,
+      shareHref: `/coolabilder/media/${object.Key.split("/").map(encodeURIComponent).join("/")}`,
+    };
+  }));
+
+  return items.filter((item): item is MediaItem => item !== null);
 }
 
 async function getBestTimestamp(absolutePath: string, fileName: string, extension: string, fallback: number) {
@@ -380,7 +425,7 @@ function compareMediaItems(a: MediaItem, b: MediaItem) {
 export default async function CoolaBilderPage() {
   const media = isProductionBuild
     ? []
-    : (await getMediaFiles(mediaDirectory)).sort(compareMediaItems);
+    : (isR2Configured() ? await getR2MediaFiles() : await getMediaFiles(mediaDirectory)).sort(compareMediaItems);
   const groups = groupByDate(media);
   const imageCount = media.filter((item) => item.kind === "Bild").length;
   const videoCount = media.filter((item) => item.kind === "Video").length;
@@ -410,7 +455,7 @@ export default async function CoolaBilderPage() {
         ) : (
           groups.map((group) => {
             const groupImageCount = group.items.filter((item) => item.kind === "Bild").length;
-            const groupShareFiles = group.items.map(({ href, kind, name }) => ({ href, kind, name }));
+            const groupShareFiles = group.items.map(({ kind, name, shareHref }) => ({ href: shareHref, kind, name }));
 
             return (
               <section className={styles.dateGroup} key={group.dateKey}>
@@ -454,7 +499,7 @@ export default async function CoolaBilderPage() {
                           Ladda ner
                         </a>
                         <SaveToLibraryButton
-                          files={[{ href: item.href, kind: item.kind, name: item.name }]}
+                          files={[{ href: item.shareHref, kind: item.kind, name: item.name }]}
                           label="Spara i Bilder"
                         />
                       </div>
