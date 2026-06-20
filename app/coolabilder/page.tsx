@@ -8,19 +8,19 @@ import {
   listR2MediaObjects,
   parseR2MediaKey,
 } from "../../lib/r2";
-import { SaveToLibraryButton } from "./save-to-library-button";
-import { UploadMediaButton } from "./upload-media-button";
+import { MediaLibrary } from "./media-library";
 import styles from "./coolabilder.module.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type MediaItem = {
+export type MediaItem = {
   dateKey: string;
   dateLabel: string;
   href: string;
   kind: "Bild" | "Video";
   name: string;
+  r2Key: string | null;
   shareHref: string;
   sizeLabel: string;
   timestamp: number;
@@ -74,6 +74,7 @@ async function getMediaFiles(directory: string, relativeDirectory = ""): Promise
         href,
         kind: isImage ? "Bild" : "Video",
         name: entry.name,
+        r2Key: null,
         shareHref: href,
         sizeLabel: formatSize(fileStat.size),
         timestamp,
@@ -116,13 +117,14 @@ async function getR2MediaFiles(): Promise<MediaItem[]> {
       href: await getR2MediaUrl(object.Key),
       kind: isImage ? "Bild" as const : "Video" as const,
       name: parsed.name,
+      r2Key: object.Key,
       sizeLabel: formatSize(object.Size ?? 0),
       timestamp: parsed.timestamp,
       shareHref: `/coolabilder/media/${object.Key.split("/").map(encodeURIComponent).join("/")}`,
     };
   }));
 
-  return items.filter((item): item is MediaItem => item !== null);
+  return items.filter((item): item is NonNullable<typeof item> => item !== null);
 }
 
 async function getBestTimestamp(absolutePath: string, fileName: string, extension: string, fallback: number) {
@@ -447,72 +449,7 @@ export default async function CoolaBilderPage() {
           </div>
         </section>
 
-        {media.length === 0 ? (
-          <section className={styles.empty}>
-            <strong>Inga medier än.</strong>
-            <span>Använd knappen längst ner för att lägga till bilder och videor.</span>
-          </section>
-        ) : (
-          groups.map((group) => {
-            const groupImageCount = group.items.filter((item) => item.kind === "Bild").length;
-            const groupShareFiles = group.items.map(({ kind, name, shareHref }) => ({ href: shareHref, kind, name }));
-
-            return (
-              <section className={styles.dateGroup} key={group.dateKey}>
-                <div className={styles.dateHeading}>
-                  <h2>{group.dateLabel}</h2>
-                  <div className={styles.dateActions}>
-                    <span>{group.items.length} filer</span>
-                    <SaveToLibraryButton
-                      files={groupShareFiles}
-                      label={`Spara ${group.items.length} i Bilder`}
-                    />
-                    {groupImageCount > 0 ? (
-                      <a className={styles.groupDownload} href={`/coolabilder/download/${group.dateKey}`} download>
-                        ZIP: {groupImageCount} bilder
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-                <div className={styles.grid}>
-                  {group.items.map((item) => (
-                    <article className={styles.card} key={item.href}>
-                      <a className={styles.mediaLink} href={item.href}>
-                        {item.kind === "Bild" ? (
-                          <img className={styles.preview} src={item.href} alt={item.name} loading="lazy" />
-                        ) : (
-                          <div className={styles.videoWrap}>
-                            <video preload="metadata" src={item.href} muted playsInline />
-                            <span className={styles.typeBadge}>Video</span>
-                          </div>
-                        )}
-                      </a>
-                      <div className={styles.meta}>
-                        <span className={styles.name} title={item.name}>
-                          {item.name}
-                        </span>
-                        <div className={styles.details}>
-                          <span>{item.kind}</span>
-                          <span>{item.sizeLabel}</span>
-                        </div>
-                        <a className={styles.download} href={item.href} download>
-                          Ladda ner
-                        </a>
-                        <SaveToLibraryButton
-                          files={[{ href: item.shareHref, kind: item.kind, name: item.name }]}
-                          label="Spara i Bilder"
-                        />
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            );
-          })
-        )}
-        <footer className={styles.uploadFooter}>
-          <UploadMediaButton />
-        </footer>
+        <MediaLibrary initialGroups={groups} initialMedia={media} />
       </div>
     </main>
   );

@@ -258,6 +258,8 @@
 
 .uploadFooter {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: center;
   padding: 44px 0 4px;
 }
@@ -272,6 +274,327 @@
   font: inherit;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.manageTrigger {
+  padding: 8px 10px;
+  border: 0;
+  color: rgba(71, 85, 105, 0.52);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.viewTabs {
+  position: sticky;
+  z-index: 20;
+  top: max(10px, env(safe-area-inset-top));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: min(380px, 100%);
+  margin: 0 auto 18px;
+  padding: 4px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: rgba(248, 251, 255, 0.88);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.09);
+  backdrop-filter: blur(16px);
+}
+
+.viewTab,
+.viewTabActive {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.viewTab {
+  color: #64748b;
+  background: transparent;
+}
+
+.viewTabActive {
+  color: #fff;
+  background: #0369a1;
+  box-shadow: 0 7px 18px rgba(3, 105, 161, 0.22);
+}
+
+.filterBar {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 20px 0 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  color: #075985;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.filterBar label {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.filterBar select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 38px 8px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.13);
+  border-radius: 9px;
+  color: #0f172a;
+  background: #fff;
+  font: inherit;
+  font-weight: 800;
+}
+
+.manageNotice {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(190, 18, 60, 0.16);
+  border-radius: 11px;
+  color: #9f1239;
+  background: #fff1f2;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.manageNotice button {
+  margin-left: auto;
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #be123c;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.deleteButton {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid rgba(190, 18, 60, 0.18);
+  border-radius: 11px;
+  color: #be123c;
+  background: #fff1f2;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.deleteButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.manageDialog {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(400px, 100%);
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 18px;
+  color: #152033;
+  background: #f8fbff;
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.24);
+}
+
+.manageDialog .uploadClose {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.manageDialog h2 {
+  padding-right: 42px;
+  color: #0f172a;
+  font-size: 1.55rem;
+}
+
+.manageDialog > p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.manageLock {
+  color: #0369a1;
+}
+
+.memories {
+  display: grid;
+  justify-items: center;
+  padding: 18px 0 8px;
+}
+
+.memoriesHeading {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.memoriesHeading span {
+  color: #0284c7;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.memoriesHeading h2 {
+  color: #0f172a;
+  font-size: clamp(1.8rem, 6vw, 2.7rem);
+}
+
+.memoriesHeading p {
+  color: #64748b;
+}
+
+.swipeStage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(440px, 100%);
+  min-height: min(62dvh, 590px);
+  overflow: hidden;
+  padding: 8px 18px 18px;
+}
+
+.swipeStage::before,
+.swipeStage::after {
+  position: absolute;
+  width: calc(100% - 58px);
+  height: calc(100% - 38px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+  content: "";
+}
+
+.swipeStage::before {
+  transform: rotate(-3deg) scale(0.95);
+}
+
+.swipeStage::after {
+  transform: rotate(3deg) scale(0.95);
+}
+
+.memoryCard,
+.memoryCardBehind {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 26px 65px rgba(15, 23, 42, 0.2);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  will-change: transform, opacity;
+}
+
+.memoryCard {
+  z-index: 2;
+}
+
+.memoryCardBehind {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  width: calc(100% - 36px);
+  transform: scale(0.97);
+  pointer-events: none;
+}
+
+.memoryCard:active {
+  cursor: grabbing;
+}
+
+.memoryCard img,
+.memoryCard video,
+.memoryCardBehind img,
+.memoryCardBehind video {
+  display: block;
+  width: 100%;
+  height: min(52dvh, 490px);
+  background: #0f172a;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.memoryCaption {
+  display: grid;
+  gap: 3px;
+  padding: 14px 16px 16px;
+}
+
+.memoryCaption span {
+  color: #0284c7;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.memoryCaption strong {
+  overflow: hidden;
+  color: #0f172a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swipeActions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.swipeActions button {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 50%;
+  color: #0369a1;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.1);
+  cursor: pointer;
+}
+
+.swipeActions span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 900;
 }
 
 .uploadBackdrop {
@@ -452,6 +775,35 @@
 
   .uploadDialog {
     padding: 18px;
+    border-radius: 16px;
+  }
+
+  .filterBar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .filterBar label {
+    display: none;
+  }
+
+  .swipeStage {
+    min-height: min(61dvh, 540px);
+    padding-inline: 14px;
+  }
+
+  .memoryCard img,
+  .memoryCard video,
+  .memoryCardBehind img,
+  .memoryCardBehind video {
+    height: min(49dvh, 430px);
+  }
+
+  .memoryCardBehind {
+    width: calc(100% - 28px);
+  }
+
+  .manageDialog {
+    padding: 20px;
     border-radius: 16px;
   }
 }
