@@ -20,6 +20,7 @@ R2_ACCESS_KEY_ID="ditt-access-key-id"
 R2_SECRET_ACCESS_KEY="din-secret-access-key"
 R2_BUCKET_NAME="studde-coolabilder"
 R2_ENDPOINT="https://DITT_ACCOUNT_ID.r2.cloudflarestorage.com"
+COOLABILDER_UPLOAD_PASSWORD="ett-separat-delbart-lösenord"
 ```
 
 För en bucket med EU jurisdiction används i stället:
@@ -54,6 +55,7 @@ Lägg dessa i Railway-service -> **Variables**:
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET_NAME`
 - `R2_ENDPOINT`
+- `COOLABILDER_UPLOAD_PASSWORD`
 
 Efter deploy läser `/coolabilder` automatiskt från R2. Visning använder signerade R2-länkar direkt, medan
 “Spara i Bilder” och dags-ZIP använder appens säkra serverroute.

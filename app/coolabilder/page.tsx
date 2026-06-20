@@ -9,6 +9,7 @@ import {
   parseR2MediaKey,
 } from "../../lib/r2";
 import { SaveToLibraryButton } from "./save-to-library-button";
+import { UploadMediaButton } from "./upload-media-button";
 import styles from "./coolabilder.module.css";
 
 export const dynamic = "force-dynamic";
@@ -437,8 +438,7 @@ export default async function CoolaBilderPage() {
           <span className={styles.eyebrow}>Hemligt resebibliotek</span>
           <h1>Coola bilder</h1>
           <p>
-            Ett enkelt mediebibliotek för resor, sorterat efter datum. Lägg bilder och videor i
-            mappen, så dyker de upp här automatiskt.
+            Ett enkelt mediebibliotek för resor, sorterat efter datum.
           </p>
           <div className={styles.summary}>
             <span className={styles.pill}>{media.length} filer</span>
@@ -450,7 +450,7 @@ export default async function CoolaBilderPage() {
         {media.length === 0 ? (
           <section className={styles.empty}>
             <strong>Inga medier än.</strong>
-            <span>Lägg filer i public/coolabilder-media och ladda om sidan.</span>
+            <span>Använd knappen längst ner för att lägga till bilder och videor.</span>
           </section>
         ) : (
           groups.map((group) => {
@@ -510,6 +510,9 @@ export default async function CoolaBilderPage() {
             );
           })
         )}
+        <footer className={styles.uploadFooter}>
+          <UploadMediaButton />
+        </footer>
       </div>
     </main>
   );
