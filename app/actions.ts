@@ -93,9 +93,9 @@ export async function logoutAction() {
 const contributionSchema = z.object({
   userId: z.string().min(1),
   title: z.string().trim().min(2).max(60),
-  amount: z.coerce.number().int().refine((value) => value !== 0),
+  amount: z.coerce.number().int().min(-2147483648).max(2147483647).refine((value) => value !== 0),
   kind: z.enum([CONTRIBUTION_TYPES.SALE, CONTRIBUTION_TYPES.SWISH, CONTRIBUTION_TYPES.MANUAL]),
-  occurredAt: z.string().trim().optional(),
+  occurredAt: z.string().trim().refine((value) => !value || (/^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value)).optional(),
   note: z.string().trim().max(200).optional(),
 });
 
@@ -458,7 +458,7 @@ export async function submitOptionVoteAction(formData: FormData) {
     },
   });
 
-  if (!option || option.pollId !== parsed.data.pollId || !option.poll.isOpen) {
+  if (!option || option.pollId !== parsed.data.pollId || !option.poll.isOpen || option.poll.type !== POLL_TYPES.OPTION) {
     redirectByRole(session.role, undefined, "invalid-vote", tab);
   }
 

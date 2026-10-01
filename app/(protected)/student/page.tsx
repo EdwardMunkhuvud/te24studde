@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClassList } from "@/components/class-list";
 import { redirect } from "next/navigation";
 
 import { submitOptionVoteAction, submitSuggestionVoteAction } from "@/app/actions";
@@ -63,22 +64,24 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
   }));
   const latestAnnouncement = data.announcements[0] ?? null;
   const latestHistoryEntry = student.history[student.history.length - 1] ?? null;
+  const orderedPolls = [...data.polls].sort((a, b) => Number(b.isOpen) - Number(a.isOpen) || Number(Boolean(a.currentUserResponse)) - Number(Boolean(b.currentUserResponse)));
+  const unansweredCount = data.polls.filter((poll) => poll.isOpen && !poll.currentUserResponse).length;
   const openPollCount = data.polls.filter((poll) => poll.isOpen).length;
   const remainingText =
     student.remainingAmount > 0
       ? `${formatCurrency(student.remainingAmount)} kvar till målet`
-      : `${formatCurrency(Math.abs(student.remainingAmount))} över målet`;
+      : student.remainingAmount === 0 ? "Målet är nått. Snyggt jobbat!" : `${formatCurrency(Math.abs(student.remainingAmount))} över målet — snyggt jobbat!`;
   const tabs: PageTabItem[] = [
     { key: "overview", label: "Översikt" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
-    { key: "polls", label: "Röstningar", badge: data.polls.length || null },
+    { key: "polls", label: "Omröstningar", badge: unansweredCount || null },
     { key: "history", label: "Historik" },
     { key: "class", label: "Klassen" },
   ];
 
   return (
     <div className="page-stack">
-      <section className="page-hero">
+      <section className={`page-hero ${activeTab !== "overview" ? "page-hero-compact" : ""}`}>
         <div>
           <span className="eyebrow">Din klasskassa</span>
           <h1>{student.name}</h1>
@@ -94,7 +97,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
         </div>
       </section>
 
-      {banner ? <div className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div> : null}
+      {banner ? <div role={banner.type === "error" ? "alert" : "status"} className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div> : null}
 
       <PageTabs activeTab={activeTab} basePath="/student" tabs={tabs} />
 
@@ -107,9 +110,9 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
               <ProgressBar value={student.progressPercent} />
             </article>
             <article className="panel">
-              <span className="panel-label">Kvar till målet</span>
-              <strong className="panel-value">{formatCurrency(student.remainingAmount)}</strong>
-              <p className="panel-subtle">Negativt värde betyder att du redan gått över målet.</p>
+              <span className="panel-label">{student.remainingAmount < 0 ? "Över målet" : "Kvar till målet"}</span>
+              <strong className="panel-value">{formatCurrency(Math.abs(student.remainingAmount))}</strong>
+              <p className="panel-subtle">{student.remainingAmount <= 0 ? "Du är i mål! Tack för ditt bidrag till studenten." : "Lite närmare studenten för varje bidrag."}</p>
             </article>
             <article className="panel">
               <span className="panel-label">Klassens totalsumma</span>
@@ -119,7 +122,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
             <article className="panel">
               <span className="panel-label">Öppna omröstningar</span>
               <strong className="panel-value">{openPollCount}</strong>
-              <p className="panel-subtle">{data.announcements.length} meddelanden publicerade</p>
+              <p className="panel-subtle">{data.announcements.length} {data.announcements.length === 1 ? "meddelande publicerat" : "meddelanden publicerade"}</p>
             </article>
           </section>
 
@@ -143,8 +146,8 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
               </div>
               <div className="stack">
                 <Link className="info-callout quick-link-card" href="/student?tab=polls">
-                  <strong>{openPollCount} öppna omröstningar</strong>
-                  <p>Gå till fliken Röstningar för att svara utan att scrolla genom resten av sidan.</p>
+                  <strong>{unansweredCount > 0 ? `${unansweredCount} ${unansweredCount === 1 ? "omröstning väntar" : "omröstningar väntar"} på ditt svar` : "Du har svarat på allt som är öppet ✓"}</strong>
+                  <p>{unansweredCount > 0 ? "Vad tycker du? Rösta eller lämna ett förslag." : "Kika på resultaten eller ändra ditt svar."}</p>
                 </Link>
                 {latestAnnouncement ? (
                   <Link
@@ -220,7 +223,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
             {data.polls.length === 0 ? (
               <div className="feed-empty">Inga omröstningar ännu.</div>
             ) : (
-              data.polls.map((poll) => (
+              orderedPolls.map((poll) => (
                 <article className="poll-card" key={poll.id}>
                   <div className="poll-topline">
                     <span className={`status-pill ${poll.isOpen ? "open" : "closed"}`}>
@@ -241,7 +244,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                                 {option.label}
                                 {option.selectedByCurrentUser ? <strong className="inline-tag">Ditt val</strong> : null}
                               </span>
-                              <strong>{option.voteCount} röster</strong>
+                              <strong>{option.voteCount} {option.voteCount === 1 ? "röst" : "röster"}</strong>
                             </div>
                             <div className="option-bar">
                               <div style={{ width: `${option.percentage}%` }} />
@@ -253,11 +256,12 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                         <form action={submitOptionVoteAction} className="poll-submit">
                           <input name="pollId" type="hidden" value={poll.id} />
                           <input name="tab" type="hidden" value="polls" />
-                          <div className="choice-list">
+                          <fieldset className="vote-choices"><legend>Välj ett alternativ</legend><div className="choice-list">
                             {poll.options.map((option) => (
                               <label className="choice-card" key={option.id}>
                                 <input
                                   defaultChecked={poll.currentUserResponse?.optionId === option.id}
+                                  required
                                   name="optionId"
                                   type="radio"
                                   value={option.id}
@@ -265,9 +269,10 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                                 <span>{option.label}</span>
                               </label>
                             ))}
-                          </div>
+                          </div></fieldset>
+                          <p className="small-text">Du kan ändra din röst så länge omröstningen är öppen.</p>
                           <SubmitButton className="button button-primary" pendingLabel="Sparar svar...">
-                            Spara röst
+                            {poll.currentUserResponse ? "Uppdatera min röst" : "Spara min röst"}
                           </SubmitButton>
                         </form>
                       ) : null}
@@ -290,17 +295,19 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                         <form action={submitSuggestionVoteAction} className="poll-submit">
                           <input name="pollId" type="hidden" value={poll.id} />
                           <input name="tab" type="hidden" value="polls" />
+                          <p className="small-text">Andra elever ser förslaget utan ditt namn. Admin kan se vem som skickat det.</p>
                           <label className="field">
-                            <span>Ditt förslag</span>
+                            <span>Ditt förslag (max 250 tecken)</span>
                             <textarea
                               defaultValue={poll.currentUserResponse?.suggestionText ?? ""}
+                              required minLength={2} maxLength={250}
                               name="suggestionText"
                               placeholder="Skriv ditt förslag här"
                               rows={4}
                             />
                           </label>
                           <SubmitButton className="button button-primary" pendingLabel="Skickar förslag...">
-                            Skicka förslag
+                            {poll.currentUserResponse ? "Uppdatera mitt förslag" : "Skicka förslag"}
                           </SubmitButton>
                         </form>
                       ) : null}
@@ -358,33 +365,8 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
               <h2>Så ligger alla till just nu</h2>
             </div>
           </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Placering</th>
-                  <th>Namn</th>
-                  <th>Totalt</th>
-                  <th>Kvar</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.classRows.map((row, index) => (
-                  <tr className={row.id === student.id ? "highlight-row" : undefined} key={row.id}>
-                    <td>#{index + 1}</td>
-                    <td>
-                      {row.name}
-                      {row.id === student.id ? <span className="row-pill">Du</span> : null}
-                    </td>
-                    <td>{formatCurrency(row.totalAmount)}</td>
-                    <td>{formatCurrency(row.remainingAmount)}</td>
-                    <td>{Math.round(row.progressPercent)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ClassList rows={data.classRows} currentUserId={student.id} />
+
         </section>
       ) : null}
     </div>

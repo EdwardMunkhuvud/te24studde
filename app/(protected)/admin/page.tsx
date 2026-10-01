@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/delete-button";
+import { PollTypeFields } from "@/components/poll-type-fields";
+import { ClassList } from "@/components/class-list";
 import {
   createAnnouncementAction,
   createContributionAction,
@@ -95,17 +98,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     { key: "overview", label: "Översikt" },
     { key: "money", label: "Pengar" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
-    { key: "polls", label: "Röstningar", badge: data.polls.length || null },
+    { key: "polls", label: "Omröstningar", badge: data.polls.length || null },
     { key: "accounts", label: "Konton" },
     { key: "class", label: "Klassen", badge: data.rows.length || null },
   ];
 
   return (
     <div className="page-stack">
-      <section className="page-hero">
+      <section className={`page-hero ${activeTab !== "overview" ? "page-hero-compact" : ""}`}>
         <div>
           <span className="eyebrow">Adminpanel</span>
-          <h1>Mörkblå kontroll över studentkassan</h1>
+          <h1>{activeTab === "overview" ? "Lite ordning. Mer student." : tabs.find((tab) => tab.key === activeTab)?.label}</h1>
           <p>
             Här lägger du in pengar, postar meddelanden, skapar omröstningar och ser exakt vem som har röstat eller
             skickat in ett förslag.
@@ -118,7 +121,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
       </section>
 
-      {banner ? <div className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.text}</div> : null}
+      {banner ? <div role={banner.type === "error" ? "alert" : "status"} className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.text}</div> : null}
 
       <PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} />
 
@@ -155,7 +158,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <>
                   <strong className="panel-value">{formatCurrency(data.adminSummary.totalAmount)}</strong>
                   <p className="panel-subtle">
-                    {formatCurrency(data.adminSummary.remainingAmount)} kvar till ditt personliga mål.
+                    {data.adminSummary.remainingAmount <= 0 ? "Ditt personliga mål är nått — snyggt jobbat!" : `${formatCurrency(data.adminSummary.remainingAmount)} kvar till ditt personliga mål.`}
                   </p>
                   <ProgressBar value={data.adminSummary.progressPercent} />
                   <EarningsChart data={adminChartData} />
@@ -174,8 +177,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
               <div className="stack">
                 <Link className="info-callout quick-link-card" href="/admin?tab=money">
-                  <strong>{data.recentContributions.length} nya poster i översikten</strong>
-                  <p>Gå till Pengar om du vill registrera fler utan att scrolla genom allt annat.</p>
+                  <strong>Registrera nästa bidrag →</strong>
+                  <p>Registrera en försäljning, swish eller justering.</p>
                 </Link>
                 {latestAnnouncement ? (
                   <Link
@@ -211,7 +214,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <input name="tab" type="hidden" value="money" />
               <label className="field">
                 <span>Elev</span>
-                <select name="userId">
+                <select name="userId" required defaultValue="">
+                  <option value="" disabled>Välj en person…</option>
                   {data.userOptions.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
@@ -222,11 +226,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </label>
               <label className="field">
                 <span>Rubrik</span>
-                <input name="title" placeholder="t.ex. Kakförsäljning vecka 11" type="text" />
+                <input required minLength={2} maxLength={60} name="title" placeholder="t.ex. Kakförsäljning vecka 11" type="text" />
               </label>
               <label className="field">
                 <span>Belopp i kronor</span>
-                <input name="amount" placeholder="350" type="number" />
+                <input required step="1" name="amount" placeholder="350" type="number" />
               </label>
               <label className="field">
                 <span>Typ</span>
@@ -243,7 +247,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <label className="field field-wide">
                 <span>Anteckning</span>
                 <textarea
-                  name="note"
+                  maxLength={200} name="note"
                   placeholder="Valfritt: vad eleven sålde eller varför du justerade något."
                   rows={4}
                 />
@@ -265,6 +269,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
             </div>
             <div className="history-list">
+              {data.recentContributions.length === 0 ? <div className="feed-empty">Inga poster ännu. Registrera klassens första bidrag här bredvid.</div> : null}
               {data.recentContributions.map((entry) => (
                 <div className="history-item" key={entry.id}>
                   <div>
@@ -297,11 +302,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <input name="tab" type="hidden" value="announcements" />
               <label className="field">
                 <span>Rubrik</span>
-                <input name="title" placeholder="t.ex. Ny försäljning på fredag" type="text" />
+                <input required minLength={3} maxLength={100} name="title" placeholder="t.ex. Ny försäljning på fredag" type="text" />
               </label>
               <label className="field">
                 <span>Meddelande</span>
-                <textarea name="body" placeholder="Skriv allt klassen behöver veta." rows={5} />
+                <textarea required minLength={6} maxLength={1200} name="body" placeholder="Skriv allt klassen behöver veta." rows={5} />
               </label>
               <SubmitButton className="button button-primary" pendingLabel="Publicerar...">
                 Publicera meddelande
@@ -335,11 +340,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <input name="tab" type="hidden" value="announcements" />
                       <label className="field">
                         <span>Rubrik</span>
-                        <input defaultValue={announcement.title} name="title" type="text" />
+                        <input defaultValue={announcement.title} required minLength={3} maxLength={100} name="title" type="text" />
                       </label>
                       <label className="field">
                         <span>Meddelande</span>
-                        <textarea defaultValue={announcement.body} name="body" rows={4} />
+                        <textarea defaultValue={announcement.body} required minLength={6} maxLength={1200} name="body" rows={4} />
                       </label>
                       <div className="inline-actions">
                         <SubmitButton className="button button-secondary" pendingLabel="Sparar...">
@@ -350,9 +355,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <form action={deleteAnnouncementAction}>
                       <input name="announcementId" type="hidden" value={announcement.id} />
                       <input name="tab" type="hidden" value="announcements" />
-                      <SubmitButton className="button button-danger" pendingLabel="Tar bort...">
-                        Ta bort
-                      </SubmitButton>
+                      <DeleteButton warning="Ta bort meddelandet? Det försvinner för hela klassen och går inte att ångra." />
                     </form>
                   </article>
                 ))
@@ -368,31 +371,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <div className="section-heading">
               <div>
                 <span className="eyebrow">Omröstningar</span>
-                <h2>Skapa ny röstning</h2>
+                <h2>Skapa ny omröstning</h2>
               </div>
             </div>
             <form action={createPollAction} className="stack">
               <input name="tab" type="hidden" value="polls" />
-              <label className="field">
-                <span>Typ</span>
-                <select name="type">
-                  <option value={POLL_TYPES.OPTION}>Alternativ att rösta på</option>
-                  <option value={POLL_TYPES.SUGGESTION}>Skicka in förslag</option>
-                </select>
-              </label>
+              <PollTypeFields />
               <label className="field">
                 <span>Rubrik</span>
-                <input name="title" placeholder="t.ex. Vilken färg ska hoodien ha?" type="text" />
+                <input required minLength={3} maxLength={100} name="title" placeholder="t.ex. Vilken färg ska hoodien ha?" type="text" />
               </label>
               <label className="field">
                 <span>Beskrivning</span>
-                <textarea name="description" placeholder="Beskriv vad klassen ska ta ställning till." rows={4} />
+                <textarea required minLength={6} maxLength={1200} name="description" placeholder="Beskriv vad klassen ska ta ställning till." rows={4} />
               </label>
-              <label className="field">
-                <span>Alternativ (en per rad)</span>
-                <textarea name="optionsText" placeholder={"Flak\nSkiva\nMer merch"} rows={4} />
-              </label>
-              <p className="small-text">Alternativen används bara för omröstningar med fasta val.</p>
+
               <SubmitButton className="button button-primary" pendingLabel="Skapar omröstning...">
                 Skapa omröstning
               </SubmitButton>
@@ -423,11 +416,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <input name="tab" type="hidden" value="polls" />
                       <label className="field">
                         <span>Rubrik</span>
-                        <input defaultValue={poll.title} name="title" type="text" />
+                        <input defaultValue={poll.title} required minLength={3} maxLength={100} name="title" type="text" />
                       </label>
                       <label className="field">
                         <span>Beskrivning</span>
-                        <textarea defaultValue={poll.description} name="description" rows={4} />
+                        <textarea defaultValue={poll.description} required minLength={6} maxLength={1200} name="description" rows={4} />
                       </label>
                       <label className="field">
                         <span>Status</span>
@@ -449,7 +442,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           <div className="poll-option-row" key={option.id}>
                             <div className="poll-option-label">
                               <span>{option.label}</span>
-                              <strong>{option.voteCount} röster</strong>
+                              <strong>{option.voteCount} {option.voteCount === 1 ? "röst" : "röster"}</strong>
                             </div>
                             <div className="option-bar">
                               <div style={{ width: `${option.percentage}%` }} />
@@ -486,9 +479,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <form action={deletePollAction}>
                       <input name="pollId" type="hidden" value={poll.id} />
                       <input name="tab" type="hidden" value="polls" />
-                      <SubmitButton className="button button-danger" pendingLabel="Tar bort...">
-                        Ta bort omröstning
-                      </SubmitButton>
+                      <DeleteButton label="Ta bort omröstning" warning="Ta bort omröstningen och alla svar? Det går inte att ångra." />
                     </form>
                   </article>
                 ))
@@ -511,15 +502,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <input name="tab" type="hidden" value="accounts" />
               <label className="field">
                 <span>Fullständigt namn</span>
-                <input name="name" placeholder="Förnamn Efternamn" type="text" />
+                <input required minLength={4} maxLength={80} name="name" placeholder="Förnamn Efternamn" type="text" />
               </label>
               <label className="field">
                 <span>Startlösenord</span>
-                <input name="password" placeholder="t.ex. maja" type="text" />
+                <input required minLength={3} maxLength={100} autoComplete="new-password" name="password" placeholder="t.ex. maja" type="text" />
               </label>
               <label className="field">
                 <span>Mål i kronor</span>
-                <input defaultValue="1050" name="targetAmount" type="number" />
+                <input defaultValue="1050" required min="0" max="50000" step="1" name="targetAmount" type="number" />
               </label>
               <SubmitButton className="button button-primary" pendingLabel="Skapar konto...">
                 Skapa elev
@@ -538,7 +529,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <input name="tab" type="hidden" value="accounts" />
               <label className="field">
                 <span>Välj elev</span>
-                <select name="userId">
+                <select name="userId" required defaultValue="">
+                  <option value="" disabled>Välj en person…</option>
                   {data.userOptions.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
@@ -548,7 +540,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </label>
               <label className="field">
                 <span>Nytt lösenord</span>
-                <input name="password" placeholder="t.ex. viggo" type="text" />
+                <input required minLength={3} maxLength={100} autoComplete="new-password" name="password" placeholder="t.ex. viggo" type="text" />
               </label>
               <SubmitButton className="button button-secondary" pendingLabel="Återställer...">
                 Återställ lösenord
@@ -566,32 +558,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <h2>Alla elever och deras totalsummor</h2>
             </div>
           </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Namn</th>
-                  <th>Användarnamn</th>
-                  <th>Roll</th>
-                  <th>Totalt</th>
-                  <th>Kvar</th>
-                  <th>Poster</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.name}</td>
-                    <td>{row.username}</td>
-                    <td>{row.role === ROLES.ADMIN ? <span className="row-pill">Admin</span> : "Elev"}</td>
-                    <td>{formatCurrency(row.totalAmount)}</td>
-                    <td>{formatCurrency(row.remainingAmount)}</td>
-                    <td>{row.contributionCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ClassList rows={data.rows} currentUserId={session.userId} admin />
+
         </section>
       ) : null}
     </div>

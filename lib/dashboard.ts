@@ -128,7 +128,7 @@ function summarizeUsers(users: UserWithContributions[]) {
         totalAmount,
         targetAmount: user.targetAmount,
         remainingAmount,
-        progressPercent: clampPercent((totalAmount / user.targetAmount) * 100),
+        progressPercent: user.targetAmount > 0 ? clampPercent((totalAmount / user.targetAmount) * 100) : 100,
         contributionCount: user.contributions.length,
       } satisfies StudentRow;
     })
@@ -327,7 +327,7 @@ export async function getStudentDashboard(userId: string) {
   const classTotal = rows.reduce((sum, row) => sum + row.totalAmount, 0);
   const classTarget = rows.reduce((sum, row) => sum + row.targetAmount, 0);
   const averageAmount = rows.length > 0 ? Math.round(classTotal / rows.length) : 0;
-  const rank = rows.findIndex((row) => row.id === userId) + 1;
+  const rank = rows.filter((row) => row.totalAmount > summary.totalAmount).length + 1;
   const community = await getCommunityContent(userId, false);
 
   return {
@@ -373,8 +373,10 @@ export async function getAdminDashboard(adminId: string) {
         amount: contribution.amount,
         kindLabel: contributionTypeLabel(contribution.kind as ContributionType),
         note: contribution.note,
+        createdAt: contribution.createdAt,
       })),
     )
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
     .slice(0, 8);
 
   const adminSummary = rows.find((row) => row.id === adminId) ?? null;
@@ -390,7 +392,7 @@ export async function getAdminDashboard(adminId: string) {
     announcements: community.announcements,
     polls: community.polls,
     openPollCount: community.polls.filter((poll) => poll.isOpen).length,
-    userOptions: rows.map((row) => ({
+    userOptions: [...rows].sort((left, right) => left.name.localeCompare(right.name, "sv")).map((row) => ({
       id: row.id,
       name: row.name,
       username: row.username,

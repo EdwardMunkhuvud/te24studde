@@ -7,3 +7,5 @@ prisma/dev.db-journal
 generated-login-uppgifter.md
 prisma-temp-test
 *.log
+.DS_Store
+*.tsbuildinfo

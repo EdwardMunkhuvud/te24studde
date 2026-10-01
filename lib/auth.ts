@@ -62,7 +62,7 @@ export async function getSession() {
     const verified = await jwtVerify(token, SESSION_SECRET);
     return verified.payload as SessionPayload;
   } catch {
-    clearSession();
+    // Server-rendered pages cannot mutate cookies. Login/logout replace the stale cookie.
     return null;
   }
 }

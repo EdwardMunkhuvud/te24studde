@@ -1,4 +1,7 @@
 import Link from "next/link";
+import "./normal.css";
+import { LoginFields } from "@/components/login-fields";
+import { ProgressBar } from "@/components/progress-bar";
 import { redirect } from "next/navigation";
 
 import { loginAction } from "@/app/actions";
@@ -52,16 +55,19 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const activePolls = stats.polls.filter((poll) => poll.isOpen);
 
   return (
-    <main className="landing-page">
+    <main className="landing-page normal-site">
       <div className="landing-background" />
-      <section className="landing-shell">
+      <a className="skip-link" href="#login">Till inloggningen</a>
+      <header className="landing-nav landing-shell"><Link className="brand-mark" href="/">Studde<span className="brand-dot">.</span></Link><span className="small-text">TE24 · Mot studenten</span><nav className="landing-links" aria-label="Startnavigation"><a className="text-link" href="#information">Senaste nytt ↓</a><a className="landing-login-link" href="#login">Logga in →</a></nav></header>
+      <section className="landing-shell landing-intro">
         <div className="hero-panel">
           <div className="hero-copy">
             <span className="eyebrow">Studde</span>
-            <h1>Studentkassan, omröstningar och information.</h1>
+            <h1>En klass. Ett mål.
+              <span className="hero-accent">En riktigt bra student.</span></h1>
             <p className="hero-text">
-              Varje elev ser sin utveckling, klassens total, aktuell information och omröstningar. Edvin
-              sköter sida, så om frågetecken uppstår kontakta honom.
+              Håll koll på klasskassan, rösta på nästa idé och se vad som händer i TE24.
+              Allt inför studenten, samlat på ett ställe.
             </p>
             <div className="stat-grid">
               <article className="stat-card">
@@ -77,45 +83,39 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <strong>{activePolls.length}</strong>
               </article>
               <article className="stat-card">
-                <span>Leder just nu</span>
-                <strong>{stats.leadingStudent?.name ?? "Ingen än"}</strong>
+                <span>Vi gör det tillsammans</span>
+                <strong>{stats.studentCount} elever</strong>
               </article>
             </div>
+            <div className="goal-summary"><div><span>Klassens väg till målet</span><strong>{stats.classTarget > 0 ? Math.round(stats.classTotal / stats.classTarget * 100) : 0}%</strong></div><ProgressBar value={stats.classTarget > 0 ? stats.classTotal / stats.classTarget * 100 : 0} /><p className="small-text">{stats.classTotal >= stats.classTarget ? "Målet är nått — snyggt jobbat, klassen!" : `${formatCurrency(stats.classTarget - stats.classTotal)} kvar. Varje bidrag räknas.`}</p></div>
           </div>
-          <div className="login-card">
+          <div className="login-card" id="login">
             <div className="login-header">
               <p className="eyebrow">Inloggning</p>
-              <h2>Logga in på klassen</h2>
-              <p>Använd ditt användarnamn och ditt enkla lösenord för att komma in. Användarnamnet är förnamn och efternamn i små bokstäver med punkt emellan, ex &quot;karl.andersson&quot; och lösenord endast namn i små bokstäver, ex &quot;karl&quot;</p>
+              <h2>Välkommen tillbaka!</h2>
+              <p>Logga in för att se din kassa och göra din röst hörd.</p>
             </div>
             {banner ? (
-              <div className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div>
+              <div role={banner.type === "error" ? "alert" : "status"} className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div>
             ) : null}
             <form action={loginAction} className="stack">
-              <label className="field">
-                <span>Användarnamn</span>
-                <input autoComplete="username" name="username" placeholder="t.ex. karl.andersson" type="text" />
-              </label>
-              <label className="field">
-                <span>Lösenord</span>
-                <input autoComplete="current-password" name="password" placeholder="t.ex. karl" type="password" />
-              </label>
+              <LoginFields />
               <SubmitButton className="button button-primary" pendingLabel="Loggar in...">
                 Logga in
               </SubmitButton>
             </form>
             <div className="info-callout">
-              <strong>Nuvarande admin</strong>
-              <p>Edvin hanterar hela sidan och är ansvarig för allt.</p>
+              <strong>Hur loggar jag in?</strong>
+              <p>Användarnamn: förnamn.efternamn, t.ex. karl.andersson. Lösenordet är vanligtvis ditt förnamn i små bokstäver. Fastnat? Fråga Edvin.</p>
             </div>
-            <Link className="text-link" href="https://www.google.com/search?q=id%C3%A9er+f%C3%B6r+stundenten&rlz=1C1BYYL_svSE973SE973&oq=id%C3%A9er+f%C3%B6r+stundenten&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQIRgKGKABMgkIAhAhGAoYoAEyBwgDECEYnwUyBwgEECEYnwUyBwgFECEYnwUyBwgGECEYnwUyBwgHECEYnwUyBwgIECEYnwUyBwgJECEYnwXSAQg1MzkzajBqN6gCALACAA&sourceid=chrome&ie=UTF-8">
-              Ideér till studenten
+            <Link className="text-link" href="https://www.google.com/search?q=idéer+till+studenten" target="_blank" rel="noopener noreferrer">
+              Inspiration till studenten ↗
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="landing-shell landing-feed">
+      <section className="landing-shell landing-feed" id="information">
         <div className="feed-grid">
           <article className="panel">
             <div className="section-heading">
@@ -126,7 +126,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
             <div className="feed-list">
               {stats.announcements.length === 0 ? (
-                <div className="feed-empty">Inga announcements än.</div>
+                <div className="feed-empty">Här dyker klassens nästa meddelande upp.</div>
               ) : (
                 stats.announcements.map((announcement) => (
                   <article className="announcement-card" key={announcement.id}>
@@ -150,10 +150,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
             </div>
             <div className="feed-list">
-              {stats.polls.length === 0 ? (
-                <div className="feed-empty">Inga omröstningar än.</div>
+              {activePolls.length === 0 ? (
+                <div className="feed-empty">Inga öppna omröstningar just nu. Kika in snart igen!</div>
               ) : (
-                stats.polls.map((poll) => (
+                activePolls.map((poll) => (
                   <article className="poll-card" key={poll.id}>
                     <div className="poll-topline">
                       <span className={`status-pill ${poll.isOpen ? "open" : "closed"}`}>
@@ -169,7 +169,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                           <div className="poll-option-row" key={option.id}>
                             <div className="poll-option-label">
                               <span>{option.label}</span>
-                              <strong>{option.voteCount} röster</strong>
+                              <strong>{option.voteCount} {option.voteCount === 1 ? "röst" : "röster"}</strong>
                             </div>
                             <div className="option-bar">
                               <div style={{ width: `${option.percentage}%` }} />
@@ -182,7 +182,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         {poll.totalResponses} anonymiserade förslag inskickade hittills.
                       </div>
                     )}
-                    <p className="small-text">Logga in för att rösta eller skicka in ett förslag.</p>
+                    <a className="text-link" href="#login">Logga in och gör din röst hörd →</a>
                   </article>
                 ))
               )}

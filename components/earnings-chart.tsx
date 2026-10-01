@@ -25,14 +25,18 @@ export function EarningsChart({ data }: EarningsChartProps) {
     return <div className="empty-state">Ingen historik registrerad än.</div>;
   }
 
+  if (data.length === 1) {
+    return <div className="single-history"><span className="eyebrow">Första posten är registrerad</span><strong className="panel-value">{formatCurrency(data[0].total)}</strong><p className="panel-subtle">{data[0].label}. När fler poster registreras visas din kurva här.</p></div>;
+  }
+
   return (
-    <div className="chart-shell">
+    <div className="chart-shell" role="img" aria-label={`Insamlingen över ${data.length} poster. Senaste totalsumma: ${formatCurrency(data[data.length - 1].total)}.`}>
       <ResponsiveContainer height={280} width="100%">
         <AreaChart data={data}>
           <defs>
             <linearGradient id="studdeGradient" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="5%" stopColor="#f97316" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="#f97316" stopOpacity={0.05} />
+              <stop offset="5%" stopColor="#facc15" stopOpacity={0.4} />
+              <stop offset="95%" stopColor="#facc15" stopOpacity={0.05} />
             </linearGradient>
           </defs>
           <CartesianGrid stroke="rgba(148, 163, 184, 0.18)" vertical={false} />
@@ -55,6 +59,7 @@ export function EarningsChart({ data }: EarningsChartProps) {
               borderRadius: 18,
               border: "1px solid rgba(148, 163, 184, 0.2)",
               background: "rgba(15, 23, 42, 0.94)",
+              color: "#f6f8ff",
               boxShadow: "0 24px 80px rgba(2, 6, 23, 0.32)",
             }}
             formatter={(value: number, name: string) => [
@@ -68,9 +73,10 @@ export function EarningsChart({ data }: EarningsChartProps) {
             fill="url(#studdeGradient)"
             fillOpacity={1}
             name="total"
-            stroke="#f97316"
+            stroke="#facc15"
             strokeWidth={3}
-            type="monotone"
+            isAnimationActive={false}
+            type="linear"
           />
         </AreaChart>
       </ResponsiveContainer>
