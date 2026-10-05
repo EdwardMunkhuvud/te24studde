@@ -76,6 +76,29 @@ CREATE TABLE IF NOT EXISTS "Setting" (
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" DATETIME NOT NULL
 );
+CREATE TABLE IF NOT EXISTS "StudentPhoto" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "storageKey" TEXT NOT NULL,
+  "thumbnailKey" TEXT NOT NULL,
+  "fileName" TEXT NOT NULL,
+  "contentType" TEXT NOT NULL,
+  "byteSize" INTEGER NOT NULL,
+  "caption" TEXT NOT NULL DEFAULT '',
+  "scope" TEXT NOT NULL DEFAULT 'GALLERY',
+  "uploaderName" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "userId" TEXT,
+  "announcementId" TEXT,
+  "pollId" TEXT,
+  CONSTRAINT "StudentPhoto_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "StudentPhoto_announcementId_fkey" FOREIGN KEY ("announcementId") REFERENCES "Announcement" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "StudentPhoto_pollId_fkey" FOREIGN KEY ("pollId") REFERENCES "Poll" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "StudentPhoto_storageKey_key" ON "StudentPhoto"("storageKey");
+CREATE UNIQUE INDEX IF NOT EXISTS "StudentPhoto_thumbnailKey_key" ON "StudentPhoto"("thumbnailKey");
+CREATE INDEX IF NOT EXISTS "StudentPhoto_scope_createdAt_id_idx" ON "StudentPhoto"("scope", "createdAt", "id");
+CREATE INDEX IF NOT EXISTS "StudentPhoto_announcementId_idx" ON "StudentPhoto"("announcementId");
+CREATE INDEX IF NOT EXISTS "StudentPhoto_pollId_idx" ON "StudentPhoto"("pollId");
 CREATE UNIQUE INDEX IF NOT EXISTS "User_username_key" ON "User"("username");
 CREATE INDEX IF NOT EXISTS "Contribution_userId_occurredAt_sortOrder_idx" ON "Contribution"("userId", "occurredAt", "sortOrder");
 CREATE INDEX IF NOT EXISTS "Announcement_publishedAt_idx" ON "Announcement"("publishedAt");

@@ -13,7 +13,8 @@
     "db:push": "tsx scripts/setup-db.ts",
     "db:seed": "tsx scripts/seed.ts",
     "media:migrate:r2": "tsx scripts/migrate-media-to-r2.ts",
-    "media:thumbnails:r2": "tsx scripts/generate-r2-thumbnails.ts"
+    "media:thumbnails:r2": "tsx scripts/generate-r2-thumbnails.ts",
+    "test:photos": "tsx scripts/test-photos.ts"
   },
   "prisma": {
     "seed": "tsx scripts/seed.ts"

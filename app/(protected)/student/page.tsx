@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { StudentGallery } from "@/components/student-gallery";
+import { AttachedPhotos } from "@/components/attached-photos";
+import { getPhotoPage } from "@/lib/student-photos";
+import { isR2Configured } from "@/lib/r2";
 import { ClassList } from "@/components/class-list";
 import { redirect } from "next/navigation";
 
@@ -20,7 +24,7 @@ type StudentPageProps = {
   };
 };
 
-const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "history", "class"] as const;
+const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "history", "class", "photos"] as const;
 
 type StudentTab = (typeof STUDENT_TAB_KEYS)[number];
 
@@ -62,6 +66,8 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
     total: point.total,
     amount: point.amount,
   }));
+  const photoPage = activeTab === "photos" ? await getPhotoPage() : null;
+  const photoUploadsEnabled = isR2Configured();
   const latestAnnouncement = data.announcements[0] ?? null;
   const latestHistoryEntry = student.history[student.history.length - 1] ?? null;
   const orderedPolls = [...data.polls].sort((a, b) => Number(b.isOpen) - Number(a.isOpen) || Number(Boolean(a.currentUserResponse)) - Number(Boolean(b.currentUserResponse)));
@@ -73,6 +79,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
       : student.remainingAmount === 0 ? "Målet är nått. Snyggt jobbat!" : `${formatCurrency(Math.abs(student.remainingAmount))} över målet — snyggt jobbat!`;
   const tabs: PageTabItem[] = [
     { key: "overview", label: "Översikt" },
+    { key: "photos", label: "Studentbilder" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
     { key: "polls", label: "Omröstningar", badge: unansweredCount || null },
     { key: "history", label: "Historik" },
@@ -100,6 +107,8 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
       {banner ? <div role={banner.type === "error" ? "alert" : "status"} className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.message}</div> : null}
 
       <PageTabs activeTab={activeTab} basePath="/student" tabs={tabs} />
+
+      {activeTab === "photos" && photoPage ? <StudentGallery initialPage={photoPage} userId={session.userId} admin={false} enabled={photoUploadsEnabled} /> : null}
 
       {activeTab === "overview" ? (
         <>
@@ -204,6 +213,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                   </div>
                   <h3>{announcement.title}</h3>
                   <p>{announcement.body}</p>
+                  <AttachedPhotos photos={announcement.photos} />
                 </article>
               ))
             )}
@@ -233,6 +243,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
                   </div>
                   <h3>{poll.title}</h3>
                   <p>{poll.description}</p>
+                  <AttachedPhotos photos={poll.photos} />
 
                   {poll.type === POLL_TYPES.OPTION ? (
                     <>

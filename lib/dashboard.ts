@@ -5,9 +5,12 @@ import {
   PollOption,
   PollResponse,
   User,
+  StudentPhoto,
 } from "@prisma/client";
 
 import { ContributionType, PollType, Role } from "@/lib/constants";
+import { photoItem } from "@/lib/student-photos";
+import type { PhotoItem } from "@/lib/photo-types";
 import { prisma } from "@/lib/prisma";
 import { clampPercent, contributionTypeLabel, formatTimelineLabel } from "@/lib/utils";
 
@@ -16,10 +19,12 @@ type UserWithContributions = User & {
 };
 
 type AnnouncementWithAuthor = Announcement & {
+  photos: StudentPhoto[];
   author: Pick<User, "id" | "name">;
 };
 
 type PollWithRelations = Poll & {
+  photos: StudentPhoto[];
   author: Pick<User, "id" | "name">;
   options: PollOption[];
   responses: Array<
@@ -52,6 +57,7 @@ export type HistoryPoint = {
 };
 
 export type AnnouncementCard = {
+  photos: PhotoItem[];
   id: string;
   title: string;
   body: string;
@@ -60,6 +66,7 @@ export type AnnouncementCard = {
 };
 
 export type PollCard = {
+  photos: PhotoItem[];
   id: string;
   title: string;
   description: string;
@@ -160,6 +167,7 @@ function buildHistory(contributions: Contribution[]) {
 
 function buildAnnouncements(announcements: AnnouncementWithAuthor[]) {
   return announcements.map((announcement) => ({
+    photos: announcement.photos.map(photoItem),
     id: announcement.id,
     title: announcement.title,
     body: announcement.body,
@@ -206,6 +214,7 @@ function buildPollCards(
       }));
 
     return {
+      photos: poll.photos.map(photoItem),
       id: poll.id,
       title: poll.title,
       description: poll.description,
@@ -230,6 +239,7 @@ async function getCommunityContent(currentUserId?: string, includeIdentity = fal
   const [announcements, polls] = await Promise.all([
     prisma.announcement.findMany({
       include: {
+        photos: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
         author: {
           select: {
             id: true,
@@ -241,6 +251,7 @@ async function getCommunityContent(currentUserId?: string, includeIdentity = fal
     }),
     prisma.poll.findMany({
       include: {
+        photos: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
         author: {
           select: {
             id: true,

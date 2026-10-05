@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { clearSession, createSession, requireRole, requireSession } from "@/lib/auth";
 import { CONTRIBUTION_TYPES, POLL_TYPES, ROLES, Role } from "@/lib/constants";
+import { attachmentIds, syncAttachments, PhotoError } from "@/lib/student-photos";
 import { prisma } from "@/lib/prisma";
 import { buildUniqueUsername, slugifyName } from "@/lib/utils";
 
@@ -227,6 +228,11 @@ export async function resetPasswordAction(formData: FormData) {
   redirectToPath("/admin", "password-reset", undefined, tab);
 }
 
+function getAttachmentIds(formData: FormData, tab?: string) {
+  try { return attachmentIds(formData); }
+  catch { redirectToPath("/admin", undefined, "invalid-attachments", tab); }
+}
+
 const announcementSchema = z.object({
   title: z.string().trim().min(3).max(100),
   body: z.string().trim().min(6).max(1200),
@@ -244,13 +250,18 @@ export async function createAnnouncementAction(formData: FormData) {
     redirectToPath("/admin", undefined, "invalid-announcement", tab);
   }
 
-  await prisma.announcement.create({
-    data: {
-      title: parsed.data.title,
-      body: parsed.data.body,
-      authorId: session.userId,
-    },
-  });
+  const photos = getAttachmentIds(formData, tab);
+  try {
+    await prisma.$transaction(async (tx) => {
+      const announcement = await tx.announcement.create({ data: {
+        title: parsed.data.title, body: parsed.data.body, authorId: session.userId,
+      } });
+      await syncAttachments(tx, photos, session.userId, { announcementId: announcement.id });
+    });
+  } catch (error) {
+    if (error instanceof PhotoError) redirectToPath("/admin", undefined, "invalid-attachments", tab);
+    throw error;
+  }
 
   refreshApp();
   redirectToPath("/admin", "announcement-saved", undefined, tab);
@@ -261,7 +272,7 @@ const updateAnnouncementSchema = announcementSchema.extend({
 });
 
 export async function updateAnnouncementAction(formData: FormData) {
-  await requireRole(ROLES.ADMIN);
+  const session = await requireRole(ROLES.ADMIN);
   const tab = getTabValue(formData);
   const parsed = updateAnnouncementSchema.safeParse({
     announcementId: formData.get("announcementId"),
@@ -273,16 +284,18 @@ export async function updateAnnouncementAction(formData: FormData) {
     redirectToPath("/admin", undefined, "invalid-announcement", tab);
   }
 
-  await prisma.announcement.update({
-    where: {
-      id: parsed.data.announcementId,
-    },
-    data: {
-      title: parsed.data.title,
-      body: parsed.data.body,
-      publishedAt: new Date(),
-    },
-  });
+  const photos = getAttachmentIds(formData, tab);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.announcement.update({ where: { id: parsed.data.announcementId }, data: {
+        title: parsed.data.title, body: parsed.data.body, publishedAt: new Date(),
+      } });
+      await syncAttachments(tx, photos, session.userId, { announcementId: parsed.data.announcementId });
+    });
+  } catch (error) {
+    if (error instanceof PhotoError) redirectToPath("/admin", undefined, "invalid-attachments", tab);
+    throw error;
+  }
 
   refreshApp();
   redirectToPath("/admin", "announcement-updated", undefined, tab);
@@ -348,23 +361,19 @@ export async function createPollAction(formData: FormData) {
     redirectToPath("/admin", undefined, "poll-options-required", tab);
   }
 
-  const poll = await prisma.poll.create({
-    data: {
-      title: parsed.data.title,
-      description: parsed.data.description,
-      type: parsed.data.type,
-      authorId: session.userId,
-    },
-  });
-
-  if (parsed.data.type === POLL_TYPES.OPTION) {
-    await prisma.pollOption.createMany({
-      data: options.map((option, index) => ({
-        pollId: poll.id,
-        label: option,
-        sortOrder: index,
-      })),
+  const photos = getAttachmentIds(formData, tab);
+  try {
+    await prisma.$transaction(async (tx) => {
+      const poll = await tx.poll.create({ data: {
+        title: parsed.data.title, description: parsed.data.description,
+        type: parsed.data.type, authorId: session.userId,
+        ...(parsed.data.type === POLL_TYPES.OPTION ? { options: { create: options.map((label, sortOrder) => ({ label, sortOrder })) } } : {}),
+      } });
+      await syncAttachments(tx, photos, session.userId, { pollId: poll.id });
     });
+  } catch (error) {
+    if (error instanceof PhotoError) redirectToPath("/admin", undefined, "invalid-attachments", tab);
+    throw error;
   }
 
   refreshApp();
@@ -379,7 +388,7 @@ const updatePollSchema = z.object({
 });
 
 export async function updatePollAction(formData: FormData) {
-  await requireRole(ROLES.ADMIN);
+  const session = await requireRole(ROLES.ADMIN);
   const tab = getTabValue(formData);
   const parsed = updatePollSchema.safeParse({
     pollId: formData.get("pollId"),
@@ -392,16 +401,18 @@ export async function updatePollAction(formData: FormData) {
     redirectToPath("/admin", undefined, "invalid-poll", tab);
   }
 
-  await prisma.poll.update({
-    where: {
-      id: parsed.data.pollId,
-    },
-    data: {
-      title: parsed.data.title,
-      description: parsed.data.description,
-      isOpen: parsed.data.isOpen === "true",
-    },
-  });
+  const photos = getAttachmentIds(formData, tab);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.poll.update({ where: { id: parsed.data.pollId }, data: {
+        title: parsed.data.title, description: parsed.data.description, isOpen: parsed.data.isOpen === "true",
+      } });
+      await syncAttachments(tx, photos, session.userId, { pollId: parsed.data.pollId });
+    });
+  } catch (error) {
+    if (error instanceof PhotoError) redirectToPath("/admin", undefined, "invalid-attachments", tab);
+    throw error;
+  }
 
   refreshApp();
   redirectToPath("/admin", "poll-updated", undefined, tab);

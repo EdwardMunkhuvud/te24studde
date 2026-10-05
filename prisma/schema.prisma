@@ -20,6 +20,7 @@ model User {
   announcements Announcement[]
   polls         Poll[]
   pollResponses PollResponse[]
+  photos        StudentPhoto[]
 }
 
 model Contribution {
@@ -49,6 +50,8 @@ model Announcement {
   authorId    String
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
+  photos      StudentPhoto[]
+
   @@index([publishedAt])
 }
 
@@ -64,6 +67,7 @@ model Poll {
   author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   options     PollOption[]
   responses   PollResponse[]
+  photos      StudentPhoto[]
 
   @@index([createdAt])
 }
@@ -102,4 +106,28 @@ model Setting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Separate from coolabilder's media/ objects. Attachments never appear in the class album.
+model StudentPhoto {
+  id             String        @id @default(cuid())
+  storageKey     String        @unique
+  thumbnailKey   String        @unique
+  fileName       String
+  contentType    String
+  byteSize       Int
+  caption        String        @default("")
+  scope          String        @default("GALLERY")
+  uploaderName   String
+  createdAt      DateTime      @default(now())
+  userId         String?
+  announcementId String?
+  pollId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  announcement   Announcement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+  poll           Poll?         @relation(fields: [pollId], references: [id], onDelete: SetNull)
+
+  @@index([scope, createdAt, id])
+  @@index([announcementId])
+  @@index([pollId])
 }

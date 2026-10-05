@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { StudentGallery } from "@/components/student-gallery";
+import { getPhotoPage } from "@/lib/student-photos";
+import { isR2Configured } from "@/lib/r2";
+import { AttachmentPicker } from "@/components/attachment-picker";
 import { DeleteButton } from "@/components/delete-button";
 import { PollTypeFields } from "@/components/poll-type-fields";
 import { ClassList } from "@/components/class-list";
@@ -30,7 +34,7 @@ type AdminPageProps = {
   };
 };
 
-const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "accounts", "class"] as const;
+const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "accounts", "class", "photos"] as const;
 
 type AdminTab = (typeof ADMIN_TAB_KEYS)[number];
 
@@ -75,6 +79,8 @@ function bannerFromParams(searchParams: AdminPageProps["searchParams"]) {
       return { type: "error", text: "Meddelandet behöver rubrik och lite mer text." };
     case "invalid-poll":
       return { type: "error", text: "Kunde inte spara omröstningen. Kontrollera rubrik, text och status." };
+    case "invalid-attachments":
+      return { type: "error", text: "Bilderna kunde inte sparas. Välj högst fyra bilder och försök igen." };
     case "poll-options-required":
       return { type: "error", text: "Alternativ-omröstningar måste ha minst två alternativ." };
     default:
@@ -87,6 +93,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const data = await getAdminDashboard(session.userId);
   const banner = bannerFromParams(searchParams);
   const activeTab = resolveAdminTab(searchParams?.tab);
+  const photoPage = activeTab === "photos" ? await getPhotoPage() : null;
+  const photoUploadsEnabled = isR2Configured();
   const latestAnnouncement = data.announcements[0] ?? null;
   const adminChartData =
     data.adminSummary?.history.map((point) => ({
@@ -96,6 +104,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     })) ?? [];
   const tabs: PageTabItem[] = [
     { key: "overview", label: "Översikt" },
+    { key: "photos", label: "Studentbilder" },
     { key: "money", label: "Pengar" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
     { key: "polls", label: "Omröstningar", badge: data.polls.length || null },
@@ -124,6 +133,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       {banner ? <div role={banner.type === "error" ? "alert" : "status"} className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.text}</div> : null}
 
       <PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} />
+
+      {activeTab === "photos" && photoPage ? <StudentGallery initialPage={photoPage} userId={session.userId} admin={true} enabled={photoUploadsEnabled} /> : null}
 
       {activeTab === "overview" ? (
         <>
@@ -298,7 +309,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <h2>Skapa nytt meddelande</h2>
               </div>
             </div>
-            <form action={createAnnouncementAction} className="stack">
+            <form key={`new-announcement-${data.announcements.length}`} action={createAnnouncementAction} className="stack">
               <input name="tab" type="hidden" value="announcements" />
               <label className="field">
                 <span>Rubrik</span>
@@ -308,6 +319,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <span>Meddelande</span>
                 <textarea required minLength={6} maxLength={1200} name="body" placeholder="Skriv allt klassen behöver veta." rows={5} />
               </label>
+              <AttachmentPicker enabled={photoUploadsEnabled} />
               <SubmitButton className="button button-primary" pendingLabel="Publicerar...">
                 Publicera meddelande
               </SubmitButton>
@@ -346,6 +358,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <span>Meddelande</span>
                         <textarea defaultValue={announcement.body} required minLength={6} maxLength={1200} name="body" rows={4} />
                       </label>
+                      <AttachmentPicker enabled={photoUploadsEnabled} initialPhotos={announcement.photos} />
                       <div className="inline-actions">
                         <SubmitButton className="button button-secondary" pendingLabel="Sparar...">
                           Uppdatera
@@ -374,7 +387,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <h2>Skapa ny omröstning</h2>
               </div>
             </div>
-            <form action={createPollAction} className="stack">
+            <form key={`new-poll-${data.polls.length}`} action={createPollAction} className="stack">
               <input name="tab" type="hidden" value="polls" />
               <PollTypeFields />
               <label className="field">
@@ -386,6 +399,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <textarea required minLength={6} maxLength={1200} name="description" placeholder="Beskriv vad klassen ska ta ställning till." rows={4} />
               </label>
 
+              <AttachmentPicker enabled={photoUploadsEnabled} />
               <SubmitButton className="button button-primary" pendingLabel="Skapar omröstning...">
                 Skapa omröstning
               </SubmitButton>
@@ -429,6 +443,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           <option value="false">Stängd</option>
                         </select>
                       </label>
+                      <AttachmentPicker enabled={photoUploadsEnabled} initialPhotos={poll.photos} />
                       <div className="inline-actions">
                         <SubmitButton className="button button-secondary" pendingLabel="Sparar...">
                           Uppdatera

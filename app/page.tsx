@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AttachedPhotos } from "@/components/attached-photos";
 import "./normal.css";
 import { LoginFields } from "@/components/login-fields";
 import { ProgressBar } from "@/components/progress-bar";
@@ -136,6 +137,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     </div>
                     <h3>{announcement.title}</h3>
                     <p>{announcement.body}</p>
+                    <AttachedPhotos photos={announcement.photos} />
                   </article>
                 ))
               )}
@@ -163,6 +165,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     </div>
                     <h3>{poll.title}</h3>
                     <p>{poll.description}</p>
+                    <AttachedPhotos photos={poll.photos} />
                     {poll.type === POLL_TYPES.OPTION ? (
                       <div className="poll-options">
                         {poll.options.map((option) => (

@@ -61,3 +61,19 @@ Efter deploy läser `/coolabilder` automatiskt från R2. Visning använder signe
 “Spara i Bilder” och dags-ZIP använder appens säkra serverroute.
 
 Om R2-variablerna saknas används den lokala mappen som fallback.
+
+## Studentbilder och bilder i inlägg
+
+Fliken **Studentbilder** använder samma R2-anslutning, men separata objekt:
+
+- `student-photos/gallery/`: klassens studentalbum.
+- `student-photos/attachments/`: adminbilder i meddelanden och omröstningar.
+- `media/` och `thumbnails/`: befintliga Coola bilder, oförändrade.
+
+Ingen ny bucket eller uppladdningskod behövs om R2 redan är anslutet. Studentbilder använder klassens vanliga inloggning. Alla inloggade kan se albumet och lägga upp bilder; uppladdarens namn följer med automatiskt. Elever kan ta bort sina egna bilder och admin kan ta bort alla albumbilder.
+
+JPG, PNG, WebP och GIF stöds, högst 25 MB och 40 megapixel per bild. Originalet sparas tillsammans med en mindre WebP-förhandsvisning. HEIC behöver exporteras som JPG. Admin kan bifoga upp till fyra bilder per inlägg, även vid redigering. Utkast och bortkopplade bilder visas inte i albumet eller offentligt. Publicerade inläggsbilder visas även på den befintliga offentliga startsidan.
+
+Appens startscript skapar den nya `StudentPhoto`-tabellen och index utan att ändra befintliga tabeller. Databasen ska ligga på Railways beständiga volume, precis som tidigare. Bildernas metadata och uppladdare finns i databasen, själva bildfilerna i R2. Övergivna eller bortkopplade inläggsbilder behålls i lagringen; albumbilder raderas när ägaren eller admin tar bort dem.
+
+Kör `npm run test:photos` för isolerade kontroller med en tillfällig databas och lokal S3-testserver. Testet använder aldrig den riktiga bucketen.
