@@ -21,6 +21,21 @@ model User {
   polls         Poll[]
   pollResponses PollResponse[]
   photos        StudentPhoto[]
+  dinoRuns      DinoRun[]
+}
+
+model DinoRun {
+  id          String    @id @default(cuid())
+  userId      String
+  playerName  String
+  score       Int?
+  durationMs  Int?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, score, completedAt])
+  @@index([score, completedAt])
 }
 
 model Contribution {

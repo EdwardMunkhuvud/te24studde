@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DinoArcade } from "@/components/dino-arcade";
 import { StudentGallery } from "@/components/student-gallery";
 import { getPhotoPage } from "@/lib/student-photos";
 import { isR2Configured } from "@/lib/r2";
@@ -34,7 +35,7 @@ type AdminPageProps = {
   };
 };
 
-const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "accounts", "class", "photos"] as const;
+const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "accounts", "class", "photos", "dino"] as const;
 
 type AdminTab = (typeof ADMIN_TAB_KEYS)[number];
 
@@ -110,7 +111,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     { key: "polls", label: "Omröstningar", badge: data.polls.length || null },
     { key: "accounts", label: "Konton" },
     { key: "class", label: "Klassen", badge: data.rows.length || null },
+    { key: "dino", label: "Dino Run" },
   ];
+
+  if (activeTab === "dino") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} /><DinoArcade userId={session.userId} name={session.name} /></div>;
 
   return (
     <div className="page-stack">

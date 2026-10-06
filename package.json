@@ -14,7 +14,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "media:migrate:r2": "tsx scripts/migrate-media-to-r2.ts",
     "media:thumbnails:r2": "tsx scripts/generate-r2-thumbnails.ts",
-    "test:photos": "tsx scripts/test-photos.ts"
+    "test:photos": "tsx scripts/test-photos.ts",
+    "test:dino": "node --import tsx scripts/test-dino.ts"
   },
   "prisma": {
     "seed": "tsx scripts/seed.ts"

@@ -106,6 +106,18 @@ CREATE INDEX IF NOT EXISTS "Poll_createdAt_idx" ON "Poll"("createdAt");
 CREATE INDEX IF NOT EXISTS "PollOption_pollId_sortOrder_idx" ON "PollOption"("pollId", "sortOrder");
 CREATE UNIQUE INDEX IF NOT EXISTS "PollResponse_pollId_userId_key" ON "PollResponse"("pollId", "userId");
 CREATE INDEX IF NOT EXISTS "PollResponse_pollId_optionId_idx" ON "PollResponse"("pollId", "optionId");
+CREATE TABLE IF NOT EXISTS "DinoRun" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  "playerName" TEXT NOT NULL,
+  "score" INTEGER,
+  "durationMs" INTEGER,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "completedAt" DATETIME,
+  CONSTRAINT "DinoRun_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "DinoRun_userId_score_completedAt_idx" ON "DinoRun"("userId", "score", "completedAt");
+CREATE INDEX IF NOT EXISTS "DinoRun_score_completedAt_idx" ON "DinoRun"("score", "completedAt");
 `;
 
 if (!existsSync(schemaPath)) {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DinoArcade } from "@/components/dino-arcade";
 import { StudentGallery } from "@/components/student-gallery";
 import { AttachedPhotos } from "@/components/attached-photos";
 import { getPhotoPage } from "@/lib/student-photos";
@@ -24,7 +25,7 @@ type StudentPageProps = {
   };
 };
 
-const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "history", "class", "photos"] as const;
+const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "history", "class", "photos", "dino"] as const;
 
 type StudentTab = (typeof STUDENT_TAB_KEYS)[number];
 
@@ -84,7 +85,10 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
     { key: "polls", label: "Omröstningar", badge: unansweredCount || null },
     { key: "history", label: "Historik" },
     { key: "class", label: "Klassen" },
+    { key: "dino", label: "Dino Run" },
   ];
+
+  if (activeTab === "dino") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/student" tabs={tabs} /><DinoArcade userId={session.userId} name={student.name} /></div>;
 
   return (
     <div className="page-stack">
