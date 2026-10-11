@@ -1,6 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { Archive, Link2, Plus, Upload } from "lucide-react";
+import { Archive, Link2, Plus, Trash2, Upload } from "lucide-react";
 import { MAX_STUDY_BYTES, studyDate, type StudyExam, type StudyMaterial } from "@/lib/study-types";
 import styles from "./study-hub.module.css";
 
@@ -29,6 +29,7 @@ function ExamForm({ exam, mutate, busy }: { exam?: StudyExam; mutate: StudyMutat
 }
 
 function MaterialForm({ material, exams, mutate, busy }: { material: StudyMaterial; exams: StudyExam[]; mutate: StudyMutate; busy: boolean }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   return <form className={styles.form} onSubmit={async (e) => {
     e.preventDefault(); const data = values(e.currentTarget);
     await mutate({ action: "material-save", id: material.id, ...data, sortOrder: Number(data.sortOrder) }, "Materialet är uppdaterat.");
@@ -43,7 +44,9 @@ function MaterialForm({ material, exams, mutate, busy }: { material: StudyMateri
     <div className={styles.row}>
       <button className="button button-primary" disabled={busy}>Spara material</button>
       <button type="button" className="button button-secondary" disabled={busy} onClick={() => mutate({ action: "material-archive", id: material.id, archived: !material.archived }, material.archived ? "Materialet är återställt." : "Materialet är arkiverat. Anteckningarna finns kvar.")}><Archive size={16} />{material.archived ? "Återställ" : "Arkivera"}</button>
+      <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => setConfirmDelete(true)}><Trash2 size={16} />Ta bort material</button>
     </div>
+    {confirmDelete ? <div className={styles.deleteConfirm} role="alert"><strong>Ta bort ”{material.title}” permanent?</strong><p>{material.kind === "LINK" ? "Länken" : "Filen"} och alla användares anteckningar, markeringar och avbockningar för materialet tas bort. Det går inte att ångra.</p><div className={styles.row}><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => mutate({ action: "material-delete", id: material.id, confirmed: true }, "Materialet och dess anteckningar är borttagna.")}>{busy ? "Tar bort…" : "Ja, ta bort permanent"}</button><button type="button" className="button button-secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>Avbryt borttagning</button></div></div> : null}
   </form>;
 }
 
@@ -82,7 +85,7 @@ export function StudyAdmin({ exams, mutate, busy, upload }: {
       </section>
     </div>
     <h3>Prov och material</h3>
-    <p className={styles.subtle}>Arkivering döljer innehåll för klassen. Filer och personliga anteckningar bevaras och kan återställas.</p>
+    <p className={styles.subtle}>Arkivering döljer innehåll och kan återställas. Ta bort material raderar filen och dess anteckningar permanent.</p>
     {!exams.length ? <p className={styles.empty}>Inga prov ännu. Lägg till det första ovan.</p> : exams.map((exam) => <details key={exam.id} className={`${styles.card} ${exam.archived ? styles.archived : ""}`}>
       <summary><div><strong>{exam.title}</strong><span>{studyDate(exam.date)} · {exam.materials.filter((m) => !m.archived).length} material{exam.archived ? " · Arkiverat" : ""}</span></div></summary>
       <ExamForm exam={exam} mutate={mutate} busy={busy} />

@@ -29,12 +29,22 @@ export const linkInput = z.string().trim().max(2000).url().refine((value) => {
   const url = new URL(value);
   return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
 });
+export const highlightsInput = z.array(z.object({
+  x: z.number().min(0).max(1), y: z.number().min(0).max(1),
+  width: z.number().positive().max(1), height: z.number().positive().max(1),
+}).refine((rect) => rect.x + rect.width <= 1.000001 && rect.y + rect.height <= 1.000001)).max(100);
 export const noteInput = z.object({
   materialId: required(100), body: required(4000), quote: short(1000), section: short(150),
   page: z.number().int().min(1).max(100000).nullable(),
   x: z.number().min(0).max(1).nullable(), y: z.number().min(0).max(1).nullable(),
   seconds: z.number().int().min(0).max(86400).nullable(),
+  highlights: highlightsInput.default([]),
 }).refine((note) => (note.x === null) === (note.y === null));
+
+function readHighlights(value: string) {
+  try { const parsed = highlightsInput.safeParse(JSON.parse(value)); return parsed.success ? parsed.data : []; }
+  catch { return []; }
+}
 
 export async function getStudyData(userId: string, admin = false): Promise<StudyData> {
   const exams = await prisma.studyExam.findMany({
@@ -53,7 +63,7 @@ export async function getStudyData(userId: string, admin = false): Promise<Study
       fileName: m.fileName, byteSize: m.byteSize, sortOrder: m.sortOrder, archived: m.archived,
       completed: m.progress[0]?.completed ?? false,
       notes: m.notes.map((n) => ({ id: n.id, body: n.body, quote: n.quote, section: n.section,
-        page: n.page, x: n.x, y: n.y, seconds: n.seconds, updatedAt: n.updatedAt.toISOString() })),
+        page: n.page, x: n.x, y: n.y, seconds: n.seconds, highlights: readHighlights(n.highlights), updatedAt: n.updatedAt.toISOString() })),
     })),
   })) };
 }
@@ -78,6 +88,22 @@ export function studyStorageDirectory() {
 export function localStudyPath(key: string) {
   if (!/^[a-f0-9-]{36}\.(pdf|jpg|png|webp|gif|mp3|wav|ogg|m4a)$/.test(key)) throw new StudyError("Ogiltig fil.", 404);
   return join(studyStorageDirectory(), key);
+}
+export async function deleteStudyMaterial(id: string) {
+  const material = await prisma.studyMaterial.findUnique({ where: { id } });
+  if (!material) throw new StudyError("Materialet hittades inte.", 404);
+  // Remove the file first: failed storage deletion keeps the row available for an admin retry.
+  if (material.storageKey) {
+    try {
+      if (material.storage === "R2") {
+        if (!/^study-materials\/[a-f0-9-]{36}\.(pdf|jpg|png|webp|gif|mp3|wav|ogg|m4a)$/.test(material.storageKey)) throw new Error("Invalid study storage key");
+        const { client, bucket } = getR2Config();
+        await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: material.storageKey }));
+      } else await unlink(localStudyPath(material.storageKey)).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; });
+    } catch { throw new StudyError("Filen kunde inte tas bort. Materialet finns kvar så att du kan försöka igen.", 503); }
+  }
+  // The database cascades deletion to every user's notes and progress for this material only.
+  await prisma.studyMaterial.deleteMany({ where: { id } });
 }
 export async function inspectStudyFile(bytes: Buffer) {
   if (!bytes.length || bytes.length > MAX_STUDY_BYTES) throw new StudyError("Filen får vara högst 40 MB.", 413);

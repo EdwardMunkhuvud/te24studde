@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { PrismaClient } from "@prisma/client";
 
 const command = process.platform === "win32" ? "npx.cmd" : "npx";
 const schemaPath = "prisma/schema.prisma";
@@ -141,4 +142,14 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-console.log(result.stdout.trim() || "Databasen ar redo.");
+async function upgradeStudyNotes() {
+  const db = new PrismaClient();
+  try {
+    const columns = await db.$queryRawUnsafe<Array<{ name: string }>>('PRAGMA table_info("StudyNote")');
+    if (!columns.some((column) => column.name === "highlights")) {
+      await db.$executeRawUnsafe('ALTER TABLE "StudyNote" ADD COLUMN "highlights" TEXT NOT NULL DEFAULT \'[]\'');
+    }
+    console.log(result.stdout.trim() || "Databasen ar redo.");
+  } finally { await db.$disconnect(); }
+}
+upgradeStudyNotes().catch((error) => { console.error(error); process.exitCode = 1; });

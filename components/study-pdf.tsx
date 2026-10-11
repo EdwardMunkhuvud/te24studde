@@ -3,16 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
-import type { NoteAnchor } from "@/lib/study-types";
+import { EMPTY_ANCHOR, type NoteAnchor, type StudyNote } from "@/lib/study-types";
+import { textHighlights } from "@/lib/study-highlights";
+import { StudyAnnotations, StudyArea } from "./study-annotations";
 import styles from "./study-hub.module.css";
 
-export function StudyPdf({ url, page, onPage, onAnchor, marker }: {
+export function StudyPdf({ url, page, onPage, onAnchor, marker, notes, onNote }: {
   url: string; page: number; onPage: (page: number) => void; onAnchor: (anchor: Partial<NoteAnchor>) => void;
-  marker: NoteAnchor | null;
+  marker: (NoteAnchor & { id?: string }) | null; notes: StudyNote[]; onNote: (note: StudyNote) => void;
 }) {
   const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState(""); const [loading, setLoading] = useState(true);
   const [width, setWidth] = useState(600);
+  const [areaMode, setAreaMode] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null); const canvas = useRef<HTMLCanvasElement>(null);
   const text = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -25,7 +28,7 @@ export function StudyPdf({ url, page, onPage, onAnchor, marker }: {
       destroy = () => { void task.destroy(); };
       const pdf = await task.promise;
       if (!disposed) setDocument(pdf);
-    }).catch(() => { if (!disposed) { setError("PDF-filen kunde inte öppnas. Du kan fortfarande ladda ner den och skriva en anteckning med sidnummer."); setLoading(false); } });
+    }).catch((reason) => { if (!disposed) { console.error("PDF reader:", reason); setError("PDF-filen kunde inte öppnas. Du kan fortfarande ladda ner den och skriva en anteckning med sidnummer."); setLoading(false); } });
     return () => { disposed = true; destroy?.(); };
   }, [url]);
   useEffect(() => {
@@ -46,6 +49,7 @@ export function StudyPdf({ url, page, onPage, onAnchor, marker }: {
       target.style.width = `${viewport.width}px`; target.style.height = `${viewport.height}px`;
       text.current.replaceChildren();
       text.current.style.setProperty("--scale-factor", String(viewport.scale));
+      text.current.style.setProperty("--total-scale-factor", String(viewport.scale * viewport.userUnit));
       const pdfjs = await import("pdfjs-dist");
       if (disposed) return;
       const textContent = await current.getTextContent();
@@ -67,19 +71,23 @@ export function StudyPdf({ url, page, onPage, onAnchor, marker }: {
       }} /> av {document?.numPages ?? "…"}</label>
       <button className="button button-secondary" aria-label="Nästa PDF-sida" disabled={!document || page >= document.numPages} onClick={() => onPage(page + 1)}>→</button>
     </div>
-    <p className={styles.subtle}>Markera text för ett citat, eller välj en plats på sidan för din anteckning.</p>
+    <div className={styles.selectionTools}><button className="button button-secondary" aria-pressed={areaMode} onClick={() => setAreaMode(!areaMode)}>{areaMode ? "Avsluta områdesmarkering" : "Markera område"}</button>
+      <span className={styles.subtle}>{areaMode ? "Dra en ruta runt det du vill anteckna om." : "Markera text för överstrykning, eller tryck på en plats."}</span></div>
     {error ? <p role="alert" className={styles.error}>{error}</p> : null}
     {loading ? <p role="status" className={styles.subtle}>Öppnar sida…</p> : null}
-    <div ref={wrapper} className={styles.pdfPage} onMouseUp={(e) => {
-      if (loading || error) return;
+    <div ref={wrapper}>
+    <StudyArea className={styles.pdfPage} areaMode={areaMode} disabled={loading || Boolean(error)} onArea={(highlight) => {
+      onAnchor({ ...EMPTY_ANCHOR, page, highlights: [highlight] });
+    }} onPick={(point, element) => {
       const selection = window.getSelection();
-      const quote = selection && text.current?.contains(selection.anchorNode) ? selection.toString().trim().slice(0, 1000) : "";
-      const rect = e.currentTarget.getBoundingClientRect();
-      onAnchor({ page, quote, x: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)), y: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)), seconds: null });
+      const quote = selection && text.current?.contains(selection.anchorNode) && text.current?.contains(selection.focusNode) ? selection.toString().trim().slice(0, 1000) : "";
+      const highlights = quote && selection?.rangeCount ? textHighlights(Array.from(selection.getRangeAt(0).getClientRects()), element.getBoundingClientRect()) : [];
+      onAnchor({ ...EMPTY_ANCHOR, page, quote, highlights, ...(highlights.length ? {} : point) });
     }}>
       <canvas ref={canvas} aria-label={`PDF sida ${page}`} />
       <div ref={text} className="textLayer" />
-      {marker?.x !== null && marker?.x !== undefined && marker.y !== null ? <span className={styles.marker} style={{ left: `${marker.x * 100}%`, top: `${marker.y * 100}%` }} aria-label="Markerad plats" /> : null}
+      <StudyAnnotations notes={notes.filter((note) => note.page === page)} draft={marker} activeId={marker?.id} onNote={onNote} />
+    </StudyArea>
     </div>
   </div>;
 }

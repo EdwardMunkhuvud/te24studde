@@ -1,7 +1,7 @@
 // Run after npm run build. All writes stay in a disposable database and temporary file/S3 storage.
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
@@ -11,6 +11,7 @@ import { SignJWT } from "jose";
 import sharp from "sharp";
 import { seedStudyExams } from "../lib/study-seed";
 import { daysUntil, stockholmDate, type StudyData } from "../lib/study-types";
+import { relativeHighlight, textHighlights } from "../lib/study-highlights";
 
 async function main() {
   const directory = mkdtempSync(join(tmpdir(), "studde-study-"));
@@ -35,6 +36,21 @@ async function main() {
     assert.equal(await db.studyExam.count(), 13);
     assert.equal((await db.studyExam.findUniqueOrThrow({ where: { id: first.id } })).title, "Edited by admin");
     assert.equal((await db.contribution.findUniqueOrThrow({ where: { id: original.id } })).amount, 123);
+    // Upgrade an existing database that already contains notes but has no highlight column.
+    const legacyMaterial = await db.studyMaterial.create({ data: { examId: first.id, kind: "LINK", title: "Legacy", url: "https://example.com" } });
+    const legacyNote = await db.studyNote.create({ data: { userId: users[0].id, materialId: legacyMaterial.id, body: "Keep this explanation", page: null } });
+    await db.$executeRawUnsafe('ALTER TABLE "StudyNote" DROP COLUMN "highlights"');
+    setup(); setup();
+    const migrated = await db.studyNote.findUniqueOrThrow({ where: { id: legacyNote.id } });
+    assert.equal(migrated.body, "Keep this explanation"); assert.equal(migrated.highlights, "[]");
+    await db.studyMaterial.delete({ where: { id: legacyMaterial.id } });
+    const bounds = { left: 0, top: 0, right: 1000, bottom: 2000 };
+    const selectedRect = { left: 100, top: 200, right: 300, bottom: 250 };
+    const highlight = { x: 0.1, y: 0.1, width: 0.2, height: 0.025 };
+    assert.deepEqual(relativeHighlight(selectedRect, bounds), highlight);
+    assert.deepEqual(relativeHighlight({ left: 50, top: 100, right: 150, bottom: 125 }, { left: 0, top: 0, right: 500, bottom: 1000 }), highlight);
+    assert.deepEqual(textHighlights([selectedRect, selectedRect], bounds), [highlight]);
+    assert.equal(relativeHighlight({ left: 1001, top: 0, right: 1100, bottom: 100 }, bounds), null);
     assert.equal(stockholmDate(new Date("2026-10-11T22:30:00Z")), "2026-10-12");
     assert.equal(daysUntil("2026-10-26", "2026-10-24"), 2); // DST change does not alter the countdown.
 
@@ -84,7 +100,11 @@ async function main() {
     assert.equal((await fetch(content, { headers: { ...headers(0), range: "bytes=999999-" } })).status, 416);
     const note = { action: "note-save", materialId: pdfId, body: "Min egen förklaring", quote: "Citat", section: "Uppgift 4", page: 2, x: 0.4, y: 0.6, seconds: null, userId: users[1].id };
     assert.equal((await request(0, { ...note, x: 1.5 })).status, 400);
-    assert.equal((await request(0, note)).status, 200);
+    assert.equal((await request(0, { ...note, highlights: [{ ...highlight, x: 0.95 }] })).status, 400);
+    assert.equal((await request(0, { ...note, highlights: Array(101).fill(highlight) })).status, 400);
+    assert.equal((await request(0, { ...note, page: null, highlights: [highlight] })).status, 400);
+    assert.equal((await request(0, { ...note, materialId: linkRow.id, page: null, x: null, y: null, highlights: [highlight] })).status, 400);
+    assert.equal((await request(0, { ...note, highlights: [highlight] })).status, 200);
     const noteRow = await db.studyNote.findFirstOrThrow(); assert.equal(noteRow.userId, users[0].id);
     assert.equal((await request(1, { ...note, id: noteRow.id, body: "Stolen" })).status, 404);
     assert.equal((await request(1, { action: "note-delete", id: noteRow.id })).status, 404);
@@ -92,6 +112,11 @@ async function main() {
     const own = await (await request(0)).json() as StudyData; const other = await (await request(1)).json() as StudyData; const admin = await (await request(2)).json() as StudyData;
     const material = (data: StudyData) => data.exams.flatMap((e) => e.materials).find((m) => m.id === pdfId)!;
     assert.equal(material(own).notes.length, 1); assert.equal(material(own).completed, true);
+    assert.deepEqual(material(own).notes[0].highlights, [highlight]);
+    assert.equal((await request(0, { ...note, id: noteRow.id, body: "Edited explanation", highlights: [] })).status, 200);
+    assert.equal(material(await (await request(0)).json()).notes[0].body, "Edited explanation");
+    assert.deepEqual(material(await (await request(0)).json()).notes[0].highlights, []);
+    assert.equal((await request(0, { ...note, id: noteRow.id, highlights: [highlight] })).status, 200);
     assert.equal(material(other).notes.length, 0); assert.equal(material(other).completed, false); assert.equal(material(admin).notes.length, 0);
     assert.equal((await request(2, { action: "material-save", id: pdfId, examId: first.id, title: "Moved", description: "", sortOrder: 2 })).status, 200);
     assert.equal((await db.studyNote.findUniqueOrThrow({ where: { id: noteRow.id } })).materialId, pdfId);
@@ -100,12 +125,33 @@ async function main() {
     assert.equal((await request(0, note)).status, 404);
     assert.equal((await request(2, { action: "material-archive", id: pdfId, archived: false })).status, 200);
     assert.equal(material(await (await request(0)).json()).notes.length, 1);
+    assert.deepEqual(material(await (await request(0)).json()).notes[0].highlights, [highlight]);
     assert.equal((await request(2, { action: "exam-archive", id: first.id, archived: true })).status, 200);
     assert.equal((await fetch(content, { headers: headers(0) })).status, 404);
     assert.equal((await request(2, { action: "exam-archive", id: first.id, archived: false })).status, 200);
     for (const [index, path] of [[0, "/student?tab=study"], [2, "/admin?tab=study"], [0, "/student"], [2, "/admin"]] as const) {
       const response = await fetch(base + path, { headers: headers(index) }); assert.equal(response.status, 200, path); assert.ok((await response.text()).includes("Studiehubb"));
     }
+    // Permanent removal deletes local bytes and all users' related data, leaving other materials intact.
+    const storedPdf = await db.studyMaterial.findUniqueOrThrow({ where: { id: pdfId } });
+    const localFile = join(directory, "files", storedPdf.storageKey!); assert.ok(existsSync(localFile));
+    assert.equal((await request(1, { ...note, highlights: [highlight] })).status, 200);
+    const imageRow = await db.studyMaterial.findFirstOrThrow({ where: { kind: "IMAGE" } });
+    assert.equal((await request(0, { ...note, materialId: imageRow.id, page: null, highlights: [highlight] })).status, 200);
+    const deletion = { action: "material-delete", id: pdfId, confirmed: true };
+    assert.equal((await request(null, deletion)).status, 401);
+    assert.equal((await request(0, deletion)).status, 403);
+    assert.equal((await request(2, deletion, "https://other.example")).status, 403);
+    assert.equal((await request(2, { ...deletion, confirmed: false })).status, 400);
+    assert.equal((await request(2, deletion)).status, 200);
+    assert.equal(existsSync(localFile), false);
+    assert.equal(await db.studyMaterial.count({ where: { id: pdfId } }), 0);
+    assert.equal(await db.studyNote.count({ where: { materialId: pdfId } }), 0);
+    assert.equal(await db.studyProgress.count({ where: { materialId: pdfId } }), 0);
+    assert.equal(await db.studyNote.count({ where: { materialId: imageRow.id } }), 1);
+    assert.equal((await fetch(content, { headers: headers(0) })).status, 404);
+    assert.equal((await request(2, { ...deletion, id: linkRow.id })).status, 200);
+    assert.equal((await request(2, { ...deletion, id: linkRow.id })).status, 404);
     // Role changes must take effect even when an old cookie still says ADMIN.
     await db.user.update({ where: { id: users[2].id }, data: { role: "STUDENT" } });
     assert.equal((await request(2, exam)).status, 403);
@@ -113,22 +159,29 @@ async function main() {
 
     // A local S3-compatible server checks R2 isolation and byte-range streaming without real credentials.
     const objects = new Map<string, Buffer>();
+    let failDeletion = false;
     objectServer = createServer(async (req, res) => {
       const key = new URL(req.url!, "http://localhost").pathname;
       if (req.method === "PUT") { const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.from(chunk)); objects.set(key, Buffer.concat(chunks)); res.writeHead(200, { ETag: '"test"' }); res.end(); }
       else if (req.method === "GET") { const bytes = objects.get(key); if (!bytes) { res.writeHead(404); res.end(); return; } const match = /bytes=(\d+)-(\d+)/.exec(req.headers.range ?? ""); const start = match ? Number(match[1]) : 0, end = match ? Number(match[2]) : bytes.length - 1; res.writeHead(match ? 206 : 200, { "Content-Length": end - start + 1, "Content-Type": "application/pdf", ...(match ? { "Content-Range": `bytes ${start}-${end}/${bytes.length}` } : {}) }); res.end(bytes.subarray(start, end + 1)); }
-      else if (req.method === "DELETE") { objects.delete(key); res.writeHead(204); res.end(); } else { res.writeHead(404); res.end(); }
+      else if (req.method === "DELETE") { if (failDeletion) { res.writeHead(503); res.end(); } else { objects.delete(key); res.writeHead(204); res.end(); } } else { res.writeHead(404); res.end(); }
     });
     await new Promise<void>((ready) => objectServer!.listen(0, "127.0.0.1", ready)); const address = objectServer.address(); assert(address && typeof address !== "string");
     process.env.DATABASE_URL = databaseUrl; process.env.R2_ACCOUNT_ID = "test"; process.env.R2_ACCESS_KEY_ID = "test"; process.env.R2_SECRET_ACCESS_KEY = "test"; process.env.R2_BUCKET_NAME = "test"; process.env.R2_ENDPOINT = `http://127.0.0.1:${address.port}`;
-    const { saveStudyFile } = await import("../lib/study"); const { prisma } = await import("../lib/prisma");
+    const { saveStudyFile, deleteStudyMaterial } = await import("../lib/study"); const { prisma } = await import("../lib/prisma");
     try {
       const r2 = await saveStudyFile(pdf, { examId: created.id, title: "R2 file", description: "", sortOrder: 0, fileName: "r2.pdf" });
       assert.equal(r2.storage, "R2"); assert.ok(r2.storageKey?.startsWith("study-materials/")); assert.deepEqual(objects.get(`/test/${r2.storageKey}`), pdf);
       const { getR2Config } = await import("../lib/r2"); const { GetObjectCommand } = await import("@aws-sdk/client-s3"); const config = getR2Config();
       const result = await config.client.send(new GetObjectCommand({ Bucket: config.bucket, Key: r2.storageKey!, Range: "bytes=2-6" })); assert.deepEqual(Buffer.from(await result.Body!.transformToByteArray()), pdf.subarray(2, 7));
+      failDeletion = true;
+      await assert.rejects(deleteStudyMaterial(r2.id), /Filen kunde inte tas bort/);
+      assert.equal(await db.studyMaterial.count({ where: { id: r2.id } }), 1); assert.ok(objects.has(`/test/${r2.storageKey}`));
+      failDeletion = false;
+      await deleteStudyMaterial(r2.id);
+      assert.equal(await db.studyMaterial.count({ where: { id: r2.id } }), 0); assert.equal(objects.has(`/test/${r2.storageKey}`), false);
     } finally { await prisma.$disconnect(); }
-    console.log("Study integration passed: 13 calendar entries, safe repeated startup, admin rights, private notes/progress across sessions, uploads, local/R2 storage, ranges, validation, archive/restore and existing pages.");
+    console.log("Study integration passed: safe highlight migration, private persisted highlights, validation, permanent local/R2 deletion and cascading notes/progress, storage failure retry, 13 calendar entries, admin rights, uploads, ranges, archive/restore and existing pages.");
   } finally {
     if (server && server.exitCode === null) { const exited = new Promise<void>((done) => server!.once("exit", () => done())); server.kill("SIGTERM"); await exited; }
     if (objectServer) await new Promise<void>((done) => objectServer!.close(() => done()));

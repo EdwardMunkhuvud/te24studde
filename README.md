@@ -15,11 +15,11 @@ Studde ar en Next.js-app for klasskassan till studenten. Varje elev loggar in oc
 
 Öppna fliken **Studiehubb** som elev eller admin. Schemat innehåller de 13 kommande TE24-tillfällen som lästes från skolkalendern **Skrivschema TE** den 11 oktober 2026, inklusive ett tydligt märkt övnings-PM. Datum och tider visas i svensk tid. Kalendern är en startimport; admin sköter fortsatta ändringar i **Hantera**.
 
-Admin kan skapa och ändra prov, lägga upp flera PDF-, bild- eller ljudfiler samtidigt och lägga till webblänkar. Material kan namnges, beskrivas, sorteras och flyttas mellan prov. Arkivering döljer innehållet för elever och bevarar filer och anteckningar; admin kan återställa det.
+Admin kan skapa och ändra prov, lägga upp flera PDF-, bild- eller ljudfiler samtidigt och lägga till webblänkar. Material kan namnges, beskrivas, sorteras och flyttas mellan prov. Arkivering döljer innehållet för elever och bevarar filer och anteckningar; admin kan återställa det. **Ta bort material** kräver en bekräftelse och raderar filen/länken samt alla användares anteckningar, markeringar och avbockningar för materialet permanent.
 
 Tre studiestöd ingår:
 
-- **Privata anteckningar:** markera text eller en plats på en PDF-sida, tryck på ett bildområde, ange en ljudtid eller referera till ett avsnitt. Anteckningar och citat sparas på elevens konto. Även admin ser bara sina egna anteckningar.
+- **Privata anteckningar:** markera text för överstrykning i en PDF, eller välj **Markera område** och dra en ruta i PDF:en/bilden. Markeringen kan sparas med anteckningen och följer med mellan besök och enheter, även vid annan skärmstorlek. Sparade markeringar visas när filen öppnas; deras sifferknappar öppnar motsvarande anteckning. Avmarkera **Spara markeringen med anteckningen** för att enbart spara texten. Punktmarkeringar, ljudtider och avsnitt fungerar också. Även admin ser bara sina egna anteckningar.
 - **Personlig checklista:** bocka av genomgånget material och se framsteg inför varje prov. Status sparas i databasen och följer kontot mellan enheter.
 - **Fokustimer:** välj ett fokuspass på 15, 25 eller 45 minuter, eller en femminuterspaus. Timern kan pausas och fortsättas medan hubben är öppen.
 

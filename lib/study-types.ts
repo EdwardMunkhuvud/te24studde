@@ -1,6 +1,7 @@
+export type StudyHighlight = { x: number; y: number; width: number; height: number };
 export type StudyNote = {
   id: string; body: string; quote: string; section: string; page: number | null;
-  x: number | null; y: number | null; seconds: number | null; updatedAt: string;
+  x: number | null; y: number | null; seconds: number | null; highlights: StudyHighlight[]; updatedAt: string;
 };
 export type StudyMaterial = {
   id: string; examId: string; title: string; description: string;
@@ -13,8 +14,8 @@ export type StudyExam = {
   location: string; description: string; archived: boolean; materials: StudyMaterial[];
 };
 export type StudyData = { exams: StudyExam[] };
-export type NoteAnchor = Pick<StudyNote, "quote" | "section" | "page" | "x" | "y" | "seconds">;
-export const EMPTY_ANCHOR: NoteAnchor = { quote: "", section: "", page: null, x: null, y: null, seconds: null };
+export type NoteAnchor = Pick<StudyNote, "quote" | "section" | "page" | "x" | "y" | "seconds" | "highlights">;
+export const EMPTY_ANCHOR: NoteAnchor = { quote: "", section: "", page: null, x: null, y: null, seconds: null, highlights: [] };
 export const MATERIAL_LABELS = { PDF: "PDF", IMAGE: "Bild", AUDIO: "Ljud", LINK: "Länk" };
 export const MAX_STUDY_BYTES = 40 * 1024 * 1024;
 export function stockholmDate(date = new Date()) {

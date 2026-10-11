@@ -68,7 +68,7 @@
 .materialActions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
 .check { display: inline-flex; align-items: center; gap: 8px; color: #bdcadd; font-size: .8rem; cursor: pointer; }
 .readerGrid { display: grid; grid-template-columns: minmax(0,1.7fr) minmax(280px,1fr); gap: 20px; align-items: start; }
-.viewer { min-width: 0; padding: 18px; border: 1px solid var(--study-line); border-radius: 16px; background: #0d1b2d; scroll-margin-top: 20px; }
+.viewer { min-width: 0; padding: 18px; border: 1px solid var(--study-line); border-radius: 16px; background: #0d1b2d; scroll-margin-top: 140px; }
 .pdfViewer { display: grid; gap: 14px; }
 .viewerToolbar { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .viewerToolbar label { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
@@ -76,6 +76,16 @@
 .pdfPage { position: relative; background: white; line-height: 0; }
 .pdfPage canvas { display: block; max-width: 100%; }
 .pdfPage :global(.textLayer) { z-index: 1; }
+.selectionTools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.selectionTools button[aria-pressed=true] { border-color: #facc15; color: #facc15; }
+.areaMode { touch-action: none; user-select: none; cursor: crosshair; }
+.areaMode :global(.textLayer) { pointer-events: none; }
+.annotationLayer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.highlight { position: absolute; background: rgba(250,204,21,.32); border: 1px solid rgba(194,144,0,.5); pointer-events: none; z-index: 2; }
+.highlightActive { background: rgba(250,204,21,.45); outline: 2px solid #b48300; outline-offset: -2px; }
+.annotationBadge { position: absolute; transform: translate(-25%,-75%); border: 1px solid #0b1a2c; border-radius: 6px; background: #facc15; color: #081321; min-width: 22px; height: 22px; padding: 2px 5px; font-size: 12px; font-weight: 800; line-height: 16px; pointer-events: auto; z-index: 3; }
+.annotationBadge:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+.note.activeNote { border-color: #facc15; }
 .marker { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #facc15; border: 3px solid #081321; outline: 2px solid #facc15; transform: translate(-50%,-50%); z-index: 2; pointer-events: none; box-shadow: 0 0 0 7px rgba(250,204,21,.25); }
 .imageArea { position: relative; margin-top: 15px; width: fit-content; max-width: 100%; }
 .imageArea img { display: block; max-width: 100%; height: auto; cursor: crosshair; }
@@ -96,6 +106,9 @@
 .noteJump { padding: 0; border: 0; color: #facc15; background: none; text-align: left; font-size: .76rem; display: flex; justify-content: space-between; gap: 8px; }
 .note blockquote, .noteCard blockquote { margin: 0; padding: 8px 10px; border-left: 2px solid #facc15; background: rgba(250,204,21,.05); font-size: .83rem; color: #c3d0df; white-space: pre-wrap; }
 .textButton { display: inline-flex; align-items: center; gap: 5px; padding: 4px 0; border: 0; background: none; color: #adbed3; font-size: .78rem; }
+.dangerButton { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 12px 16px; border: 1px solid #bd5969; border-radius: 10px; background: #391c2a; color: #fecdd3; font-size: .85rem; }
+.dangerButton:hover { background: #512237; }
+.deleteConfirm { display: grid; gap: 12px; padding: 18px; border: 1px solid #bd5969; border-radius: 12px; background: #291b2a; color: #fecdd3; font-size: .85rem; line-height: 1.6; }
 .successBanner, .errorBanner { border-radius: 12px; padding: 14px 18px; font-size: .9rem; }
 .successBanner { border: 1px solid rgba(74,222,128,.25); background: rgba(74,222,128,.08); color: #bbf7d0; }
 .errorBanner { border: 1px solid rgba(248,113,113,.4); background: rgba(248,113,113,.08); color: #fecaca; }
