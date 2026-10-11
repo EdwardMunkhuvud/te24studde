@@ -9,3 +9,6 @@ prisma-temp-test
 *.log
 .DS_Store
 *.tsbuildinfo
+
+prisma/study-materials/
+public/study/pdfjs/

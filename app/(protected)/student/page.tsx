@@ -1,3 +1,6 @@
+import { StudyHub } from "@/components/study-hub";
+import { getStudyData } from "@/lib/study";
+import { stockholmDate } from "@/lib/study-types";
 import Link from "next/link";
 import { DinoArcade } from "@/components/dino-arcade";
 import { StudentGallery } from "@/components/student-gallery";
@@ -25,7 +28,7 @@ type StudentPageProps = {
   };
 };
 
-const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "history", "class", "photos", "dino"] as const;
+const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "history", "class", "photos", "study", "dino"] as const;
 
 type StudentTab = (typeof STUDENT_TAB_KEYS)[number];
 
@@ -80,6 +83,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
       : student.remainingAmount === 0 ? "Målet är nått. Snyggt jobbat!" : `${formatCurrency(Math.abs(student.remainingAmount))} över målet — snyggt jobbat!`;
   const tabs: PageTabItem[] = [
     { key: "overview", label: "Översikt" },
+    { key: "study", label: "Studiehubb" },
     { key: "photos", label: "Studentbilder" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
     { key: "polls", label: "Omröstningar", badge: unansweredCount || null },
@@ -87,6 +91,8 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
     { key: "class", label: "Klassen" },
     { key: "dino", label: "Dino Run" },
   ];
+
+  if (activeTab === "study") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/student" tabs={tabs} /><StudyHub initialData={await getStudyData(session.userId, false)} admin={false} today={stockholmDate()} /></div>;
 
   if (activeTab === "dino") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/student" tabs={tabs} /><DinoArcade userId={session.userId} name={student.name} /></div>;
 

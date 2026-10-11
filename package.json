@@ -6,8 +6,8 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
+    "dev": "node scripts/prepare-study-pdf.mjs && next dev",
+    "build": "node scripts/prepare-study-pdf.mjs && prisma generate && next build",
     "start": "tsx scripts/boot.ts",
     "lint": "next lint",
     "db:push": "tsx scripts/setup-db.ts",
@@ -15,7 +15,8 @@
     "media:migrate:r2": "tsx scripts/migrate-media-to-r2.ts",
     "media:thumbnails:r2": "tsx scripts/generate-r2-thumbnails.ts",
     "test:photos": "tsx scripts/test-photos.ts",
-    "test:dino": "node --import tsx scripts/test-dino.ts"
+    "test:dino": "node --import tsx scripts/test-dino.ts",
+    "test:study": "node --import tsx scripts/test-study.ts"
   },
   "prisma": {
     "seed": "tsx scripts/seed.ts"
@@ -36,6 +37,7 @@
     "jose": "5.9.6",
     "lucide-react": "0.453.0",
     "next": "14.2.35",
+    "pdfjs-dist": "5.4.296",
     "prisma": "5.22.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",

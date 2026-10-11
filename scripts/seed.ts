@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { writeFile } from "node:fs/promises";
 
 import { CONTRIBUTION_TYPES, POLL_TYPES, ROLES, Role, SEED_VERSION } from "../lib/constants";
+import { seedStudyExams } from "../lib/study-seed";
 
 const prisma = new PrismaClient();
 const SEED_VERSION_KEY = "seed-version";
@@ -277,6 +278,7 @@ async function main() {
   const credentials = await syncSeedUsers();
   await ensureWelcomeAnnouncement();
   await ensureWelcomePoll();
+  await seedStudyExams(prisma);
   await writeCredentialsFile(credentials);
 
   console.log(`Synkade ${credentials.length} konton och seedade community-innehall.`);

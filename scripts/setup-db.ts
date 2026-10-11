@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const command = process.platform === "win32" ? "npx.cmd" : "npx";
 const schemaPath = "prisma/schema.prisma";
@@ -133,7 +133,7 @@ if (!existsSync(schemaPath)) {
 
 const result = spawnSync(command, ["prisma", "db", "execute", "--stdin", "--schema", schemaPath], {
   encoding: "utf8",
-  input: sql,
+  input: sql + readFileSync("scripts/study-schema.sql", "utf8"),
 });
 
 if (result.status !== 0) {

@@ -1,3 +1,6 @@
+import { StudyHub } from "@/components/study-hub";
+import { getStudyData } from "@/lib/study";
+import { stockholmDate } from "@/lib/study-types";
 import Link from "next/link";
 import { DinoArcade } from "@/components/dino-arcade";
 import { StudentGallery } from "@/components/student-gallery";
@@ -35,7 +38,7 @@ type AdminPageProps = {
   };
 };
 
-const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "accounts", "class", "photos", "dino"] as const;
+const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "accounts", "class", "photos", "study", "dino"] as const;
 
 type AdminTab = (typeof ADMIN_TAB_KEYS)[number];
 
@@ -105,6 +108,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     })) ?? [];
   const tabs: PageTabItem[] = [
     { key: "overview", label: "Översikt" },
+    { key: "study", label: "Studiehubb" },
     { key: "photos", label: "Studentbilder" },
     { key: "money", label: "Pengar" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
@@ -113,6 +117,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     { key: "class", label: "Klassen", badge: data.rows.length || null },
     { key: "dino", label: "Dino Run" },
   ];
+
+  if (activeTab === "study") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} /><StudyHub initialData={await getStudyData(session.userId, true)} admin={true} today={stockholmDate()} /></div>;
 
   if (activeTab === "dino") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} /><DinoArcade userId={session.userId} name={session.name} /></div>;
 
