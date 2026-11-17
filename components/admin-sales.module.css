@@ -1,0 +1,102 @@
+.totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  gap: 1rem;
+}
+
+.accountList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.accountList li + li {
+  border-top: 1px solid var(--panel-border);
+}
+
+.accountLink {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  padding: 0.75rem 0;
+  text-decoration: none;
+}
+
+.accountLink:hover strong,
+.classLink:hover {
+  text-decoration: underline;
+}
+
+.classLink {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.historyEntry {
+  border: 1px solid var(--panel-border);
+  border-radius: 0.9rem;
+}
+
+.historyEntry summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.historyEntry summary::-webkit-details-marker {
+  display: none;
+}
+
+.entryTitle {
+  display: grid;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+.editLabel {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.historyEntry[open] summary {
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.entryForm {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.previewRows {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.previewRows table {
+  min-width: 0;
+}
+
+.previewRows p {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .historyEntry summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .editLabel {
+    grid-column: 1 / -1;
+    font-size: 0.875rem;
+  }
+}

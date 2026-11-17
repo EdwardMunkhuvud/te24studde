@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { clearSession, createSession, requireRole, requireSession } from "@/lib/auth";
-import { CONTRIBUTION_TYPES, POLL_TYPES, ROLES, Role } from "@/lib/constants";
+import { POLL_TYPES, ROLES, Role } from "@/lib/constants";
+import { accountHistoryPath, contributionData, readContributionDetails } from "@/lib/contributions";
 import { attachmentIds, syncAttachments, PhotoError } from "@/lib/student-photos";
 import { prisma } from "@/lib/prisma";
 import { buildUniqueUsername, slugifyName } from "@/lib/utils";
@@ -91,64 +92,90 @@ export async function logoutAction() {
   redirect(buildRedirectUrl("/", { status: "logged-out" }));
 }
 
-const contributionSchema = z.object({
-  userId: z.string().min(1),
-  title: z.string().trim().min(2).max(60),
-  amount: z.coerce.number().int().min(-2147483648).max(2147483647).refine((value) => value !== 0),
-  kind: z.enum([CONTRIBUTION_TYPES.SALE, CONTRIBUTION_TYPES.SWISH, CONTRIBUTION_TYPES.MANUAL]),
-  occurredAt: z.string().trim().refine((value) => !value || (/^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value)).optional(),
-  note: z.string().trim().max(200).optional(),
-});
+async function saveNewContribution(formData: FormData, accountId?: string) {
+  await requireRole(ROLES.ADMIN);
+  const tab = accountId ? undefined : getTabValue(formData);
+  const path = accountId ? accountHistoryPath(accountId) : "/admin";
+  const userId = accountId ?? formData.get("userId");
+  const parsed = readContributionDetails(formData);
+
+  if (!parsed.success || parsed.data.amount === 0 || typeof userId !== "string" || !userId) {
+    redirectToPath(path, undefined, "invalid-transaction", tab);
+  }
+
+  const saved = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) return false;
+
+    const { _max } = await tx.contribution.aggregate({ where: { userId }, _max: { sortOrder: true } });
+    await tx.contribution.create({
+      data: {
+        ...contributionData(parsed.data),
+        userId,
+        sortOrder: (_max.sortOrder ?? -1) + 1,
+      },
+    });
+    return true;
+  });
+
+  if (!saved) redirectToPath(path, undefined, "unknown-student", tab);
+  refreshContributionViews(userId);
+  redirectToPath(path, "transaction-saved", undefined, tab);
+}
+
+function refreshContributionViews(userId: string) {
+  refreshApp();
+  revalidatePath(accountHistoryPath(userId));
+}
 
 export async function createContributionAction(formData: FormData) {
+  await saveNewContribution(formData);
+}
+
+export async function createAccountContributionAction(userId: string, formData: FormData) {
+  await saveNewContribution(formData, userId);
+}
+
+function contributionVersion(formData: FormData) {
+  return z.object({
+    id: z.string().min(1),
+    updatedAt: z.string().datetime().transform((value) => new Date(value)),
+  }).safeParse({
+    id: formData.get("contributionId"),
+    updatedAt: formData.get("updatedAt"),
+  });
+}
+
+export async function updateContributionAction(userId: string, formData: FormData) {
   await requireRole(ROLES.ADMIN);
-  const tab = getTabValue(formData);
+  const path = accountHistoryPath(userId);
+  const version = contributionVersion(formData);
+  const parsed = readContributionDetails(formData);
 
-  const parsed = contributionSchema.safeParse({
-    userId: formData.get("userId"),
-    title: formData.get("title"),
-    amount: formData.get("amount"),
-    kind: formData.get("kind"),
-    occurredAt: formData.get("occurredAt") ?? undefined,
-    note: formData.get("note") ?? undefined,
-  });
-
-  if (!parsed.success) {
-    redirectToPath("/admin", undefined, "invalid-transaction", tab);
+  if (!version.success || !parsed.success) {
+    redirectToPath(path, undefined, "invalid-transaction");
   }
 
-  const user = await prisma.user.findUnique({
-    where: {
-      id: parsed.data.userId,
-    },
-    include: {
-      contributions: {
-        select: {
-          sortOrder: true,
-        },
-      },
-    },
+  const where = { userId, ...version.data };
+  const previous = await prisma.contribution.findFirst({
+    where, select: { title: true, periodLabel: true },
   });
+  if (!previous) redirectToPath(path, undefined, "transaction-changed");
 
-  if (!user) {
-    redirectToPath("/admin", undefined, "unknown-student", tab);
+  const data = contributionData(parsed.data);
+  // Older entries may have a separate label on the student's timeline.
+  if (previous.periodLabel !== null && previous.periodLabel !== previous.title) {
+    data.periodLabel = previous.periodLabel;
   }
 
-  await prisma.contribution.create({
-    data: {
-      userId: user.id,
-      title: parsed.data.title,
-      amount: parsed.data.amount,
-      kind: parsed.data.kind,
-      note: parsed.data.note || null,
-      occurredAt: parsed.data.occurredAt ? new Date(parsed.data.occurredAt) : null,
-      periodLabel: parsed.data.occurredAt ? null : parsed.data.title,
-      sortOrder: user.contributions.length + 10,
-    },
+  const { count } = await prisma.contribution.updateMany({
+    where,
+    data: { ...data, updatedAt: new Date(Math.max(Date.now(), where.updatedAt.getTime() + 1)) },
   });
+  if (count === 0) redirectToPath(path, undefined, "transaction-changed");
 
-  refreshApp();
-  redirectToPath("/admin", "transaction-saved", undefined, tab);
+  refreshContributionViews(userId);
+  redirectToPath(path, "transaction-updated");
 }
 
 const studentSchema = z.object({

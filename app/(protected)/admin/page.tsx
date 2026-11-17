@@ -10,6 +10,9 @@ import { AttachmentPicker } from "@/components/attachment-picker";
 import { DeleteButton } from "@/components/delete-button";
 import { PollTypeFields } from "@/components/poll-type-fields";
 import { ClassList } from "@/components/class-list";
+import { ContributionFields } from "@/components/contribution-fields";
+import { SalesImportPanel } from "@/components/sales-import-panel";
+import salesStyles from "@/components/admin-sales.module.css";
 import {
   createAnnouncementAction,
   createContributionAction,
@@ -26,7 +29,8 @@ import { EarningsChart } from "@/components/earnings-chart";
 import { ProgressBar } from "@/components/progress-bar";
 import { SubmitButton } from "@/components/submit-button";
 import { requireRole } from "@/lib/auth";
-import { CONTRIBUTION_TYPES, POLL_TYPES, ROLES } from "@/lib/constants";
+import { POLL_TYPES, ROLES } from "@/lib/constants";
+import { accountHistoryPath } from "@/lib/contributions";
 import { getAdminDashboard } from "@/lib/dashboard";
 import { formatCurrency, formatDateLabel } from "@/lib/utils";
 
@@ -133,11 +137,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             skickat in ett förslag.
           </p>
         </div>
-        <div className="hero-note">
-          <span>Standardlösenord</span>
-          <strong>Förnamn i små bokstäver</strong>
-          <p>Exempel: edvin, lucas, vilma. Du kan fortfarande byta dem manuellt per elev.</p>
-        </div>
       </section>
 
       {banner ? <div role={banner.type === "error" ? "alert" : "status"} className={banner.type === "error" ? "banner danger" : "banner success"}>{banner.text}</div> : null}
@@ -223,91 +222,70 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       ) : null}
 
       {activeTab === "money" ? (
-        <section className="dashboard-grid">
-          <article className="panel panel-large">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">Registrera pengar</span>
-                <h2>Lägg till försäljning eller swish</h2>
-              </div>
-            </div>
-            <form action={createContributionAction} className="form-grid">
-              <input name="tab" type="hidden" value="money" />
-              <label className="field">
-                <span>Elev</span>
-                <select name="userId" required defaultValue="">
-                  <option value="" disabled>Välj en person…</option>
-                  {data.userOptions.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                      {user.role === ROLES.ADMIN ? " (admin)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span>Rubrik</span>
-                <input required minLength={2} maxLength={60} name="title" placeholder="t.ex. Kakförsäljning vecka 11" type="text" />
-              </label>
-              <label className="field">
-                <span>Belopp i kronor</span>
-                <input required step="1" name="amount" placeholder="350" type="number" />
-              </label>
-              <label className="field">
-                <span>Typ</span>
-                <select name="kind">
-                  <option value={CONTRIBUTION_TYPES.SALE}>Försäljning</option>
-                  <option value={CONTRIBUTION_TYPES.SWISH}>Swish</option>
-                  <option value={CONTRIBUTION_TYPES.MANUAL}>Manuell justering</option>
-                </select>
-              </label>
-              <label className="field">
-                <span>Datum</span>
-                <input name="occurredAt" type="date" />
-              </label>
-              <label className="field field-wide">
-                <span>Anteckning</span>
-                <textarea
-                  maxLength={200} name="note"
-                  placeholder="Valfritt: vad eleven sålde eller varför du justerade något."
-                  rows={4}
-                />
-              </label>
-              <div className="form-footer">
-                <p className="small-text">Tips: använd minusbelopp om du behöver korrigera något.</p>
-                <SubmitButton className="button button-primary" pendingLabel="Sparar transaktion...">
-                  Spara transaktion
-                </SubmitButton>
-              </div>
-            </form>
-          </article>
-
-          <article className="panel">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">Senaste aktivitet</span>
-                <h2>Nyast registrerade poster</h2>
-              </div>
-            </div>
-            <div className="history-list">
-              {data.recentContributions.length === 0 ? <div className="feed-empty">Inga poster ännu. Registrera klassens första bidrag här bredvid.</div> : null}
-              {data.recentContributions.map((entry) => (
-                <div className="history-item" key={entry.id}>
-                  <div>
-                    <strong>
-                      {entry.userName} · {entry.title}
-                    </strong>
-                    <p>
-                      {entry.kindLabel}
-                      {entry.note ? ` · ${entry.note}` : ""}
-                    </p>
-                  </div>
-                  <span>{formatCurrency(entry.amount)}</span>
+        <>
+          <div className="inline-actions">
+            <Link className="button button-secondary" href="/admin?tab=accounts#kontohistorik">Öppna ett kontos historik</Link>
+          </div>
+          <SalesImportPanel accounts={data.userOptions.map(({ username, name }) => ({ username, name }))} />
+          <section className="dashboard-grid">
+            <article className="panel panel-large">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">Registrera pengar</span>
+                  <h2>Lägg till försäljning eller swish</h2>
                 </div>
-              ))}
-            </div>
-          </article>
-        </section>
+              </div>
+              <form action={createContributionAction} className="form-grid">
+                <input name="tab" type="hidden" value="money" />
+                <label className="field">
+                  <span>Elev</span>
+                  <select name="userId" required defaultValue="">
+                    <option value="" disabled>Välj en person…</option>
+                    {data.userOptions.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                        {user.role === ROLES.ADMIN ? " (admin)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <ContributionFields />
+                <div className="form-footer">
+                  <p className="small-text">Tips: använd minusbelopp om du behöver korrigera något.</p>
+                  <SubmitButton className="button button-primary" pendingLabel="Sparar transaktion...">
+                    Spara transaktion
+                  </SubmitButton>
+                </div>
+              </form>
+            </article>
+
+            <article className="panel">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">Senaste aktivitet</span>
+                  <h2>Nyast registrerade poster</h2>
+                </div>
+              </div>
+              <div className="history-list">
+                {data.recentContributions.length === 0 ? <div className="feed-empty">Inga poster ännu. Registrera klassens första bidrag här bredvid.</div> : null}
+                {data.recentContributions.map((entry) => (
+                  <div className="history-item" key={entry.id}>
+                    <div>
+                      <strong>
+                        {entry.userName} · {entry.title}
+                      </strong>
+                      <p>
+                        {entry.kindLabel}
+                        {entry.note ? ` · ${entry.note}` : ""}
+                      </p>
+                    </div>
+                    <span>{formatCurrency(entry.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </section>
+        </>
       ) : null}
 
       {activeTab === "announcements" ? (
@@ -515,6 +493,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       ) : null}
 
       {activeTab === "accounts" ? (
+        <section className="panel stack jump-target" id="kontohistorik">
+          <h2>Konton och försäljningshistorik</h2>
+          <ul className={salesStyles.accountList}>
+            {data.userOptions.map((user) => (
+              <li key={user.id}>
+                <Link className={salesStyles.accountLink} href={accountHistoryPath(user.id)}>
+                  <strong>{user.name}</strong>
+                  <span className="small-text">{user.username}{user.role === ROLES.ADMIN ? " · Admin" : ""}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {activeTab === "accounts" ? (
         <section className="dashboard-grid">
           <article className="panel">
             <div className="section-heading">
@@ -565,7 +559,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </label>
               <label className="field">
                 <span>Nytt lösenord</span>
-                <input required minLength={3} maxLength={100} autoComplete="new-password" name="password" placeholder="t.ex. viggo" type="text" />
+                <input required minLength={3} maxLength={100} autoComplete="new-password" name="password" type="text" />
               </label>
               <SubmitButton className="button button-secondary" pendingLabel="Återställer...">
                 Återställ lösenord
