@@ -1,3 +1,4 @@
+import { CelebrationAdmin } from "@/components/celebration-admin";
 import { StudyHub } from "@/components/study-hub";
 import { getStudyData } from "@/lib/study";
 import { stockholmDate } from "@/lib/study-types";
@@ -39,10 +40,11 @@ type AdminPageProps = {
     error?: string;
     status?: string;
     tab?: string;
+    survey?: string;
   };
 };
 
-const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "accounts", "class", "photos", "study", "dino"] as const;
+const ADMIN_TAB_KEYS = ["overview", "money", "announcements", "polls", "celebration", "accounts", "class", "photos", "study", "dino"] as const;
 
 type AdminTab = (typeof ADMIN_TAB_KEYS)[number];
 
@@ -117,10 +119,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     { key: "money", label: "Pengar" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
     { key: "polls", label: "Omröstningar", badge: data.polls.length || null },
+    { key: "celebration", label: "Studentformulär" },
     { key: "accounts", label: "Konton" },
     { key: "class", label: "Klassen", badge: data.rows.length || null },
     { key: "dino", label: "Dino Run" },
   ];
+
+  if (activeTab === "celebration") {
+    return (
+      <div className="page-stack">
+        <PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} />
+        <CelebrationAdmin userId={session.userId} status={searchParams?.survey} />
+      </div>
+    );
+  }
 
   if (activeTab === "study") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} /><StudyHub initialData={await getStudyData(session.userId, true)} admin={true} today={stockholmDate()} /></div>;
 

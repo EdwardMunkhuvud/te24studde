@@ -24,6 +24,18 @@ model User {
   dinoRuns      DinoRun[]
   studyNotes    StudyNote[]
   studyProgress StudyProgress[]
+  celebrationResponse CelebrationResponse?
+}
+
+model CelebrationResponse {
+  userId      String    @id
+  accessToken String    @unique
+  collected   Int
+  payment     String?
+  attendance  String?
+  idea        String?
+  submittedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model StudyExam {
