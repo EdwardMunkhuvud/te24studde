@@ -1,13 +1,13 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { manageCelebrationSurvey } from "@/app/(protected)/celebration-actions";
+import { CelebrationLink } from "@/components/celebration-link";
 import { CelebrationForm } from "@/components/celebration-survey";
 import { SubmitButton } from "@/components/submit-button";
 import {
   CELEBRATION_FOLLOW_UP_LIMIT,
   celebrationChoices,
-  celebrationPath,
+  celebrationReplyPath,
   getCelebrationParticipants,
   getCelebrationSettings,
   hasCelebrationFollowUp,
@@ -20,22 +20,20 @@ import styles from "./celebration-survey.module.css";
 
 const messages: Record<string, string> = {
   configured: "Utkastet sparades.",
-  opened: "Formuläret är öppet och visas för klassen i Studde.",
+  opened: "Formuläret är öppet. Kopiera länkarna nedan för att dela det med klassen.",
   closed: "Formuläret stängdes. Svaren finns kvar här.",
   invalid: "Åtgärden kunde inte genomföras. Kontrollera beloppet och formulärets status.",
   retry: "Ändringen kunde inte sparas. Försök igen.",
 };
 
-const ownEmptyResponse = { collected: 900, payment: null, attendance: null, idea: null, submittedAt: null };
-const adminPath = celebrationPath(ROLES.ADMIN);
+const previewResponse = { collected: 900, payment: null, attendance: null, idea: null, submittedAt: null };
 
 function choiceLabel(value: string | null) {
   return value ? celebrationChoices[value as keyof typeof celebrationChoices] ?? "—" : "—";
 }
 
-export async function CelebrationAdmin({ userId, view, status }: {
+export async function CelebrationAdmin({ userId, status }: {
   userId: string;
-  view?: string;
   status?: string;
 }) {
   const admin = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
@@ -46,24 +44,13 @@ export async function CelebrationAdmin({ userId, view, status }: {
   const isOpen = settings?.status === "open";
   const message = status && Object.prototype.hasOwnProperty.call(messages, status) ? messages[status] : null;
 
-  if (view === "own") {
-    const own = !isDraft && await prisma.celebrationResponse.findUnique({ where: { userId } });
-    if (!settings || !own) redirect(adminPath);
-    return (
-      <>
-        <Link href={adminPath} className="text-link">Till formulärets översikt</Link>
-        <CelebrationForm response={own} surplus={settings.surplus} open={isOpen} status={status} />
-      </>
-    );
-  }
-
   const rows = isDraft ? [] : await prisma.celebrationResponse.findMany({
     include: { user: { select: { name: true } } },
   });
+  rows.sort((left, right) => left.user.name.localeCompare(right.user.name, "sv"));
   const participants = isDraft ? await getCelebrationParticipants() : rows;
   const followUpCount = participants.filter(({ collected }) => hasCelebrationFollowUp(collected)).length;
-  const responses = rows.filter(({ submittedAt }) => submittedAt)
-    .sort((left, right) => left.user.name.localeCompare(right.user.name, "sv"));
+  const responses = rows.filter(({ submittedAt }) => submittedAt);
   const error = status === "invalid" || status === "retry";
 
   return (
@@ -90,24 +77,38 @@ export async function CelebrationAdmin({ userId, view, status }: {
               </label>
               <SubmitButton>Spara utkast</SubmitButton>
             </form>
-            <p>Insamlade belopp hämtas från klasskassan när du öppnar formuläret. Då visas det för klassen i fliken Studentformulär.</p>
+            <p>När du öppnar formuläret hämtas de insamlade beloppen från klasskassan och en personlig länk skapas för varje elev. Eleverna öppnar sina länkar utan att logga in.</p>
           </>
         ) : <p>Beräknat överskott för klassen är {formatCurrency(settings.surplus)}.</p>}
         <div className={styles.adminActions}>
           {settings && (
             <form action={manageCelebrationSurvey}>
               <input type="hidden" name="intent" value={isOpen ? "close" : "open"} />
-              <SubmitButton className="button button-secondary">{isOpen ? "Stäng formuläret" : isDraft ? "Öppna för klassen" : "Öppna igen"}</SubmitButton>
+              <SubmitButton className="button button-secondary">{isOpen ? "Stäng formuläret" : isDraft ? "Öppna formuläret" : "Öppna igen"}</SubmitButton>
             </form>
           )}
-          {!isDraft && <Link href={adminPath + "&view=own"} className="text-link">Mitt eget svar</Link>}
         </div>
       </section>
 
       {isDraft && settings && (
         <details className={styles.preview}>
           <summary>Förhandsgranska elevvyn med följdfrågor</summary>
-          <CelebrationForm response={ownEmptyResponse} surplus={settings.surplus} open={false} preview />
+          <CelebrationForm response={previewResponse} surplus={settings.surplus} open={false} preview />
+        </details>
+      )}
+
+      {!isDraft && (
+        <details className={styles.card} open={isOpen && responses.length === 0}>
+          <summary>Personliga länkar · {rows.length} i klassen</summary>
+          <p>Skicka varje länk direkt till den person den tillhör. Länken öppnar elevens formulär med ett klick.</p>
+          <ul className={styles.linkList}>
+            {rows.map((row) => (
+              <li key={row.userId}>
+                <span>{row.user.name}</span>
+                <CelebrationLink name={row.user.name} path={celebrationReplyPath(row.accessToken)} />
+              </li>
+            ))}
+          </ul>
         </details>
       )}
 

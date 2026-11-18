@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS "User" (
 );
 CREATE TABLE IF NOT EXISTS "CelebrationResponse" (
   "userId" TEXT NOT NULL PRIMARY KEY,
+  "accessToken" TEXT NOT NULL,
   "collected" INTEGER NOT NULL,
   "payment" TEXT,
   "attendance" TEXT,
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS "CelebrationResponse" (
   "submittedAt" DATETIME,
   CONSTRAINT "CelebrationResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE UNIQUE INDEX IF NOT EXISTS "CelebrationResponse_accessToken_key" ON "CelebrationResponse"("accessToken");
 CREATE TABLE IF NOT EXISTS "Contribution" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "title" TEXT NOT NULL,

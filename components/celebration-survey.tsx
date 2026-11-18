@@ -1,7 +1,7 @@
 import type { CelebrationResponse } from "@prisma/client";
 import { CheckCircle2, GraduationCap, Lightbulb, PartyPopper, Wallet } from "lucide-react";
 
-import { saveCelebrationResponse } from "@/app/(protected)/celebration-actions";
+import { saveCelebrationResponse } from "@/app/studentfirande/actions";
 import { SubmitButton } from "@/components/submit-button";
 import {
   CELEBRATION_GOAL,
@@ -38,15 +38,16 @@ function Choices({ name, question, value }: { name: string; question: string; va
   );
 }
 
-export function CelebrationForm({ response, surplus, open, preview = false, status }: {
+export function CelebrationForm({ response, surplus, open, preview = false, accessToken, status }: {
   response: OwnResponse;
   surplus: number;
   open: boolean;
   preview?: boolean;
+  accessToken?: string;
   status?: string;
 }) {
   const followUp = hasCelebrationFollowUp(response.collected);
-  const canSubmit = open && !preview;
+  const canSubmit = open && !preview && Boolean(accessToken);
   const message = status && Object.prototype.hasOwnProperty.call(messages, status) ? messages[status] : null;
   const remaining = CELEBRATION_GOAL - response.collected;
 
@@ -68,6 +69,7 @@ export function CelebrationForm({ response, surplus, open, preview = false, stat
       {!open && !preview && <p className="banner" role="status">Formuläret är stängt för nya svar.</p>}
 
       <form action={canSubmit ? saveCelebrationResponse : undefined} className={styles.form}>
+        {canSubmit && <input type="hidden" name="accessToken" value={accessToken} />}
         <fieldset disabled={!canSubmit} className={styles.questions} aria-label="Frågor om studentfirandet">
           {followUp && (
             <section className={styles.card} aria-labelledby="celebration-followup">

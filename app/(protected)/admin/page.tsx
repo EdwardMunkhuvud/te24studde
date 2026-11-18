@@ -41,7 +41,6 @@ type AdminPageProps = {
     status?: string;
     tab?: string;
     survey?: string;
-    view?: string;
   };
 };
 
@@ -130,7 +129,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     return (
       <div className="page-stack">
         <PageTabs activeTab={activeTab} basePath="/admin" tabs={tabs} />
-        <CelebrationAdmin userId={session.userId} view={searchParams?.view} status={searchParams?.survey} />
+        <CelebrationAdmin userId={session.userId} status={searchParams?.survey} />
       </div>
     );
   }

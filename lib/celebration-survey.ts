@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 export const CELEBRATION_GOAL = 1050;
 export const CELEBRATION_FOLLOW_UP_LIMIT = 1000;
 export const CELEBRATION_IDEA_LIMIT = 1500;
+export const CELEBRATION_ADMIN_PATH = "/admin?tab=celebration";
 const settingKey = "celebration-survey";
 const classExpensesAccount = "klassens.kostnader";
 
@@ -18,6 +19,7 @@ export const celebrationChoices = {
 
 export const celebrationChoice = z.enum(["yes", "no", "unsure"]);
 export const celebrationIdea = z.string().trim().max(CELEBRATION_IDEA_LIMIT);
+export const celebrationAccessToken = z.string().regex(/^[a-zA-Z0-9_-]{32}$/);
 export const celebrationSurplus = z.number().int().nonnegative().max(2_147_483_647);
 
 const settingsSchema = z.object({
@@ -31,12 +33,8 @@ export function hasCelebrationFollowUp(collected: number) {
   return collected < CELEBRATION_FOLLOW_UP_LIMIT;
 }
 
-export function celebrationAccount(username: string, role: string) {
-  return username !== classExpensesAccount && (role === ROLES.ADMIN || role === ROLES.STUDENT);
-}
-
-export function celebrationPath(role: string) {
-  return role === ROLES.ADMIN ? "/admin?tab=celebration" : "/student?tab=celebration";
+export function celebrationReplyPath(accessToken: string) {
+  return `/studentfirande/${accessToken}`;
 }
 
 export async function getCelebrationSettings(db: Prisma.TransactionClient = prisma) {

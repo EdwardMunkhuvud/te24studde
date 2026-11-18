@@ -1,6 +1,3 @@
-import { CelebrationForm } from "@/components/celebration-survey";
-import { celebrationAccount, getCelebrationSettings } from "@/lib/celebration-survey";
-import { prisma } from "@/lib/prisma";
 import { StudyHub } from "@/components/study-hub";
 import { getStudyData } from "@/lib/study";
 import { stockholmDate } from "@/lib/study-types";
@@ -28,11 +25,10 @@ type StudentPageProps = {
     error?: string;
     status?: string;
     tab?: string;
-    survey?: string;
   };
 };
 
-const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "celebration", "history", "class", "photos", "study", "dino"] as const;
+const STUDENT_TAB_KEYS = ["overview", "announcements", "polls", "history", "class", "photos", "study", "dino"] as const;
 
 type StudentTab = (typeof STUDENT_TAB_KEYS)[number];
 
@@ -68,12 +64,7 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
   const data = await getStudentDashboard(session.userId);
   const student = data.currentStudent;
   const banner = getStudentBanner(searchParams);
-  const celebration = await getCelebrationSettings();
-  const ownResponse = celebration && celebration.status !== "draft" && celebrationAccount(session.username, session.role)
-    ? await prisma.celebrationResponse.findUnique({ where: { userId: session.userId } })
-    : null;
-  const requestedTab = resolveStudentTab(searchParams?.tab);
-  const activeTab = requestedTab === "celebration" && !ownResponse ? "overview" : requestedTab;
+  const activeTab = resolveStudentTab(searchParams?.tab);
   const historyData = student.history.map((point) => ({
     label: point.label,
     total: point.total,
@@ -96,24 +87,10 @@ export default async function StudentPage({ searchParams }: StudentPageProps) {
     { key: "photos", label: "Studentbilder" },
     { key: "announcements", label: "Meddelanden", badge: data.announcements.length || null },
     { key: "polls", label: "Omröstningar", badge: unansweredCount || null },
-    ...(ownResponse ? [{
-      key: "celebration",
-      label: "Studentformulär",
-      badge: celebration?.status === "open" && !ownResponse.submittedAt ? 1 : null,
-    }] : []),
     { key: "history", label: "Historik" },
     { key: "class", label: "Klassen" },
     { key: "dino", label: "Dino Run" },
   ];
-
-  if (activeTab === "celebration" && celebration && ownResponse) {
-    return (
-      <div className="page-stack">
-        <PageTabs activeTab={activeTab} basePath="/student" tabs={tabs} />
-        <CelebrationForm response={ownResponse} surplus={celebration.surplus} open={celebration.status === "open"} status={searchParams?.survey} />
-      </div>
-    );
-  }
 
   if (activeTab === "study") return <div className="page-stack"><PageTabs activeTab={activeTab} basePath="/student" tabs={tabs} /><StudyHub initialData={await getStudyData(session.userId, false)} admin={false} today={stockholmDate()} /></div>;
 

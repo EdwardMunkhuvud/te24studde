@@ -29,6 +29,7 @@ model User {
 
 model CelebrationResponse {
   userId      String    @id
+  accessToken String    @unique
   collected   Int
   payment     String?
   attendance  String?
