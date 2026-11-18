@@ -1,0 +1,158 @@
+.survey {
+  --celebration-gold: #f8d777;
+  --celebration-ink: #f3f0e8;
+  width: min(100%, 760px);
+  margin-inline: auto;
+  display: grid;
+  gap: 18px;
+  color: var(--celebration-ink);
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 22px;
+  align-items: end;
+  overflow: hidden;
+  padding: clamp(22px, 5vw, 42px);
+  border: 1px solid #b496583f;
+  border-radius: 26px;
+  background: radial-gradient(ellipse at 100% 0%, #57462c, transparent 62%), linear-gradient(145deg, #1b293c, #131d2b);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: repeating-linear-gradient(125deg, transparent 0 21px, #f8d77714 22px 23px, transparent 24px 41px);
+  mask-image: linear-gradient(115deg, transparent 42%, #000);
+}
+
+.heroCopy svg {
+  margin-bottom: 13px;
+  color: var(--celebration-gold);
+}
+
+.hero h1,
+.hero h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.95rem, 6vw, 3.3rem);
+  line-height: 1.06;
+  letter-spacing: -.05em;
+}
+
+.hero p {
+  max-width: 48ch;
+  color: #d5d8df;
+}
+
+.surplus {
+  display: grid;
+  gap: 3px;
+  width: fit-content;
+  padding: 11px 16px;
+  border: 1px solid #f8d77750;
+  border-radius: 14px;
+  background: #252419e8;
+  color: #f4dc9d;
+}
+
+.surplus span { font-size: .8rem; }
+.surplus strong { font: 700 clamp(1.2rem, 4vw, 1.65rem) var(--font-heading), sans-serif; white-space: nowrap; }
+
+.form,
+.questions {
+  display: grid;
+  min-width: 0;
+  gap: 18px;
+}
+
+.questions,
+.choices {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: clamp(18px, 4vw, 28px);
+  border: 1px solid #aabfda26;
+  border-radius: 21px;
+  background: #111f31;
+}
+
+.card h2 { margin: 0; font-size: clamp(1.2rem, 3.5vw, 1.5rem); line-height: 1.3; }
+.card p { color: #c4cfde; }
+.card p strong { color: #fbebbb; }
+.cardTitle { display: flex; align-items: center; gap: 12px; }
+
+.icon {
+  display: grid;
+  flex: 0 0 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--celebration-gold);
+  background: #f8d77717;
+}
+
+.choices legend { margin-bottom: 9px; font-weight: 700; }
+.choiceRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.choice {
+  display: flex;
+  align-items: center;
+  min-height: 45px;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #aabfda3d;
+  border-radius: 11px;
+  background: #0e1a29;
+  cursor: pointer;
+}
+.choice input { margin: 0; accent-color: var(--celebration-gold); }
+.choice:has(input:checked) { border-color: #f8d777b3; background: #f8d7771c; }
+.questions:disabled .choice { cursor: default; }
+
+.footer,
+.adminActions,
+.settingsForm {
+  display: flex;
+  align-items: center;
+  gap: 14px 20px;
+  flex-wrap: wrap;
+}
+
+.footer { justify-content: space-between; padding: 5px 2px 20px; }
+.footer p { color: #b8c5d4; font-size: .9rem; }
+.footer button { display: inline-flex; align-items: center; gap: 8px; }
+.answered { display: flex; gap: 7px; align-items: center; margin-top: 6px; }
+.answered svg { color: #a8e2a7; flex-shrink: 0; }
+.settingsForm { align-items: end; }
+.settingsForm label { width: min(100%, 275px); }
+.adminActions:empty { display: none; }
+.preview { padding: 12px 0; }
+.preview summary { cursor: pointer; color: var(--celebration-gold); font-weight: 700; }
+.preview[open] summary { margin-bottom: 14px; }
+
+.responses { display: grid; gap: 9px; }
+.response { padding: 13px 15px; border: 1px solid #aabfda26; border-radius: 12px; min-width: 0; }
+.response h3 { margin: 0; font-size: 1rem; }
+.response dl { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 8px 0 0; }
+.response dt { color: #b8c5d4; font-size: .8rem; }
+.response dd { margin: 0; }
+.response p { margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 600px) {
+  .hero { grid-template-columns: 1fr; }
+  .choice { padding-inline: 8px; font-size: .875rem; }
+}
+
+@media (max-width: 390px) {
+  .choiceRow { grid-template-columns: 1fr; }
+}

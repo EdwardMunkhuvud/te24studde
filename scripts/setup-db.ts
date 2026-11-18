@@ -15,6 +15,15 @@ CREATE TABLE IF NOT EXISTS "User" (
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" DATETIME NOT NULL
 );
+CREATE TABLE IF NOT EXISTS "CelebrationResponse" (
+  "userId" TEXT NOT NULL PRIMARY KEY,
+  "collected" INTEGER NOT NULL,
+  "payment" TEXT,
+  "attendance" TEXT,
+  "idea" TEXT,
+  "submittedAt" DATETIME,
+  CONSTRAINT "CelebrationResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "Contribution" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "title" TEXT NOT NULL,
