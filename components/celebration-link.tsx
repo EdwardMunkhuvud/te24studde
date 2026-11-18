@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import styles from "./celebration-survey.module.css";
 
-export function CelebrationLink({ path, name }: { path: string; name: string }) {
+export function CelebrationLink({ path }: { path: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "fallback">("idle");
 
   async function copyLink() {
@@ -18,7 +18,7 @@ export function CelebrationLink({ path, name }: { path: string; name: string }) 
 
   return (
     <div className={styles.linkControls}>
-      <button type="button" className="button button-secondary" onClick={copyLink} aria-label={`Kopiera länken för ${name}`}>
+      <button type="button" className="button button-secondary" onClick={copyLink}>
         {status === "copied" ? "Kopierad" : "Kopiera länk"}
       </button>
       <span className="sr-only" role="status">
@@ -26,7 +26,7 @@ export function CelebrationLink({ path, name }: { path: string; name: string }) 
       </span>
       {status === "fallback" && (
         <label className="field">
-          <span>Personlig länk</span>
+          <span>Gemensam länk</span>
           <input readOnly value={new URL(path, window.location.origin).href} onFocus={(event) => event.currentTarget.select()} />
         </label>
       )}

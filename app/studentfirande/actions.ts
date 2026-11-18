@@ -6,29 +6,36 @@ import { notFound, redirect } from "next/navigation";
 import {
   celebrationAccessToken,
   celebrationChoice,
+  celebrationGroupPath,
   celebrationIdea,
-  celebrationReplyPath,
   getCelebrationSettings,
   hasCelebrationFollowUp,
 } from "@/lib/celebration-survey";
 import { prisma } from "@/lib/prisma";
 
 export async function saveCelebrationResponse(formData: FormData) {
-  const token = celebrationAccessToken.safeParse(formData.get("accessToken"));
-  if (!token.success) notFound();
+  const group = celebrationAccessToken.safeParse(formData.get("groupToken"));
+  const participant = celebrationAccessToken.safeParse(formData.get("participantToken"));
+  if (!group.success || !participant.success) notFound();
 
-  const path = celebrationReplyPath(token.data);
+  const path = celebrationGroupPath(group.data);
   const idea = celebrationIdea.safeParse(formData.get("idea"));
-  if (!idea.success) redirect(path + "?survey=invalid");
+  const responsePath = `${path}?namn=${participant.data}`;
+  if (!idea.success) redirect(responsePath + "&survey=invalid");
 
-  let result: "saved" | "invalid" | "unavailable" | "retry";
+  let result: "saved" | "already-saved" | "invalid" | "unavailable" | "retry";
+
   try {
     result = await prisma.$transaction(async (db) => {
       const settings = await getCelebrationSettings(db);
-      if (settings?.status !== "open") return "unavailable";
+      if (settings?.status !== "open" || settings.groupToken !== group.data) return "unavailable";
 
-      const row = await db.celebrationResponse.findUnique({ where: { accessToken: token.data } });
+      const row = await db.celebrationResponse.findUnique({
+        where: { accessToken: participant.data },
+        select: { userId: true, collected: true, submittedAt: true },
+      });
       if (!row) return "unavailable";
+      if (row.submittedAt) return "already-saved";
 
       let payment = null;
       let attendance = null;
@@ -40,11 +47,11 @@ export async function saveCelebrationResponse(formData: FormData) {
         attendance = attend.data;
       }
 
-      await db.celebrationResponse.update({
-        where: { userId: row.userId },
+      const saved = await db.celebrationResponse.updateMany({
+        where: { userId: row.userId, submittedAt: null },
         data: { payment, attendance, idea: idea.data || null, submittedAt: new Date() },
       });
-      return "saved";
+      return saved.count ? "saved" : "already-saved";
     });
   } catch (error) {
     console.error("Could not save celebration response", error instanceof Error ? error.name : "");
@@ -53,5 +60,6 @@ export async function saveCelebrationResponse(formData: FormData) {
 
   revalidatePath(path);
   revalidatePath("/admin");
-  redirect(path + "?survey=" + result);
+  if (result === "saved") redirect(path + "?survey=saved");
+  redirect(responsePath + "&survey=" + result);
 }

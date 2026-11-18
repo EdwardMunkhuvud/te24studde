@@ -45,7 +45,11 @@ export async function manageCelebrationSurvey(formData: FormData) {
             })),
           });
         }
-        await setCelebrationSettings(db, { ...settings, status: "open" });
+        await setCelebrationSettings(db, {
+          ...settings,
+          status: "open",
+          groupToken: settings.groupToken ?? randomBytes(24).toString("base64url"),
+        });
         return "opened";
       }
 

@@ -25,6 +25,7 @@ export const celebrationSurplus = z.number().int().nonnegative().max(2_147_483_6
 const settingsSchema = z.object({
   status: z.enum(["draft", "open", "closed"]),
   surplus: celebrationSurplus,
+  groupToken: celebrationAccessToken.optional(),
 });
 
 export type CelebrationSettings = z.infer<typeof settingsSchema>;
@@ -33,8 +34,8 @@ export function hasCelebrationFollowUp(collected: number) {
   return collected < CELEBRATION_FOLLOW_UP_LIMIT;
 }
 
-export function celebrationReplyPath(accessToken: string) {
-  return `/studentfirande/${accessToken}`;
+export function celebrationGroupPath(groupToken: string) {
+  return `/studentfirande/${groupToken}`;
 }
 
 export async function getCelebrationSettings(db: Prisma.TransactionClient = prisma) {

@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/submit-button";
 import {
   CELEBRATION_FOLLOW_UP_LIMIT,
   celebrationChoices,
-  celebrationReplyPath,
+  celebrationGroupPath,
   getCelebrationParticipants,
   getCelebrationSettings,
   hasCelebrationFollowUp,
@@ -20,13 +20,11 @@ import styles from "./celebration-survey.module.css";
 
 const messages: Record<string, string> = {
   configured: "Utkastet sparades.",
-  opened: "Formuläret är öppet. Kopiera länkarna nedan för att dela det med klassen.",
+  opened: "Formuläret är öppet. Kopiera grupplänken nedan för att dela det med klassen.",
   closed: "Formuläret stängdes. Svaren finns kvar här.",
   invalid: "Åtgärden kunde inte genomföras. Kontrollera beloppet och formulärets status.",
   retry: "Ändringen kunde inte sparas. Försök igen.",
 };
-
-const previewResponse = { collected: 900, payment: null, attendance: null, idea: null, submittedAt: null };
 
 function choiceLabel(value: string | null) {
   return value ? celebrationChoices[value as keyof typeof celebrationChoices] ?? "—" : "—";
@@ -77,7 +75,7 @@ export async function CelebrationAdmin({ userId, status }: {
               </label>
               <SubmitButton>Spara utkast</SubmitButton>
             </form>
-            <p>När du öppnar formuläret hämtas de insamlade beloppen från klasskassan och en personlig länk skapas för varje elev. Eleverna öppnar sina länkar utan att logga in.</p>
+            <p>När du öppnar formuläret hämtas de insamlade beloppen från klasskassan och en gemensam länk skapas för klassen. Eleverna väljer sitt namn för att komma till sina frågor.</p>
           </>
         ) : <p>Beräknat överskott för klassen är {formatCurrency(settings.surplus)}.</p>}
         <div className={styles.adminActions}>
@@ -93,23 +91,16 @@ export async function CelebrationAdmin({ userId, status }: {
       {isDraft && settings && (
         <details className={styles.preview}>
           <summary>Förhandsgranska elevvyn med följdfrågor</summary>
-          <CelebrationForm response={previewResponse} surplus={settings.surplus} open={false} preview />
+          <CelebrationForm followUp surplus={settings.surplus} />
         </details>
       )}
 
-      {!isDraft && (
-        <details className={styles.card} open={isOpen && responses.length === 0}>
-          <summary>Personliga länkar · {rows.length} i klassen</summary>
-          <p>Skicka varje länk direkt till den person den tillhör. Länken öppnar elevens formulär med ett klick.</p>
-          <ul className={styles.linkList}>
-            {rows.map((row) => (
-              <li key={row.userId}>
-                <span>{row.user.name}</span>
-                <CelebrationLink name={row.user.name} path={celebrationReplyPath(row.accessToken)} />
-              </li>
-            ))}
-          </ul>
-        </details>
+      {settings?.groupToken && (
+        <section className={styles.card} aria-labelledby="celebration-link-heading">
+          <h2 id="celebration-link-heading">Gemensam länk</h2>
+          <p>Dela länken i klassgruppen. Varje elev väljer sitt namn och svarar på sina frågor.</p>
+          <CelebrationLink path={celebrationGroupPath(settings.groupToken)} />
+        </section>
       )}
 
       {!isDraft && (
